@@ -84,6 +84,11 @@ ros2 run turtlesim turtle_teleop_key
 ```
 Use the arrow keys — if the turtle moves, **Phase 0 is done**.
 
+<figure class="screenshot">
+  <img src="images/turtlesim-result.png" alt="TurtleSim window showing two turtles that have drawn a square and a circle on a pink canvas" />
+  <figcaption>🐢 Success looks like this — turtles responding to commands and drawing paths. If your window shows the turtle moving (even just a wiggle), your ROS 2 + WSLg stack is fully working.</figcaption>
+</figure>
+
 ### 🛟 Common WSL2 debugging gotchas
 
 | Symptom | Fix |
@@ -163,6 +168,24 @@ If you'd rather drive each step yourself, I can still help with:
 > - A launch file starting both with parameters
 > - A custom message type
 
+### ✅ Validation Checkpoint
+
+In one Ubuntu shell, build and launch:
+```bash
+cd ~/ros2_ws && colcon build --packages-select odom_demo
+source install/setup.bash
+ros2 launch odom_demo demo.launch.py
+```
+In a second shell, inspect the live topic:
+```bash
+source ~/ros2_ws/install/setup.bash
+ros2 topic list           # your topic should appear
+ros2 topic echo /odom     # see messages streaming
+ros2 topic hz /odom       # confirm publish rate matches your timer
+ros2 node info /odom_pub  # see your custom msg type listed
+```
+If both nodes start cleanly, the topic streams at the expected rate, and the subscriber logs computed velocities → **Phase 1 is done**.
+
 <div class="copilot-note">
 
 ### 🤖 How Copilot can boost Phase 1
@@ -196,6 +219,29 @@ If you'd rather drive each step yourself, I can still help with:
 - 🎛️ **`ros2_control`** — the standard hardware abstraction layer (do this now so swapping to real hardware later is trivial)
 
 > 🎯 **Mini-project deliverable:** Teleop a simulated TurtleBot around a Gazebo world; visualize its lidar scan in RViz2.
+
+### ✅ Validation Checkpoint
+
+Launch the simulator, teleop, and RViz2 (three shells):
+```bash
+# Shell 1 — simulator
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py rviz:=true
+
+# Shell 2 — teleop
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args -r cmd_vel:=/cmd_vel
+
+# Shell 3 — sanity checks
+ros2 topic hz /scan            # lidar should publish at ~5–10 Hz
+ros2 topic echo /odom --once   # odometry has a real pose
+ros2 run tf2_tools view_frames # generate a tf tree PDF
+```
+✅ You should see: TurtleBot moving in Gazebo when you press WASD, a live red laser ring around it in RViz2, and a TF tree with `odom → base_link → laser_frame`.
+
+<figure class="screenshot">
+  <img src="images/gazebo-robot-result.png" alt="Gazebo simulator window showing a mobile robot in a scene with its depth/lidar sensor casting a blue fan of rays across the floor and a wall" />
+  <figcaption>🌍 Success looks like this — your simulated robot lives in a 3D world and its sensors (here, a blue projection from a depth/lidar sensor) react to obstacles in real time. From here it's all software, all the way down.</figcaption>
+</figure>
 
 <div class="copilot-note">
 
@@ -235,6 +281,31 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 
 > 🎯 **Mini-project deliverable:** In simulation, drive the robot to map an environment, save the map, restart, localize, and send navigation goals from RViz2 — fully autonomous.
 
+### ✅ Validation Checkpoint
+
+Map → save → re-localize → autonomous goal:
+```bash
+# 1) Map with SLAM
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
+  slam:=true rviz:=true
+# Teleop-drive around until the map looks complete, then:
+ros2 run nav2_map_server map_saver_cli -f ~/maps/apartment
+
+# 2) Restart in localization + Nav2 mode
+ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
+  localization:=true nav2:=true rviz:=true \
+  map:=$HOME/maps/apartment.yaml
+
+# 3) In RViz2: click "Nav2 Goal", click a point on the map
+ros2 topic echo /behavior_tree_log --once   # see the BT firing
+```
+✅ Robot autonomously plans + drives + avoids obstacles + announces "Goal succeeded" at the target. Reproducible 3 times in a row = **Phase 3 done**.
+
+<figure class="screenshot">
+  <img src="images/nav2-result.png" alt="RViz2 showing a Nav2 demo: an occupancy-grid map with cyan/pink costmap inflation layers, AMCL particle cloud around the robot, and a planned path from start to goal" />
+  <figcaption>🧭 Success looks like this — RViz2 showing your map (occupancy grid), the costmap inflation layers (cyan → pink → purple), the AMCL particle swarm (green dots) localizing your robot, and a planned path. Click <em>Navigation2 Goal</em>, click a point, watch it drive.</figcaption>
+</figure>
+
 <div class="copilot-note">
 
 ### 🤖 How Copilot can boost Phase 3
@@ -250,40 +321,108 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 
 ---
 
-## 🎯 Phase 4 — Pick a Specialization
+## 🦾 Phase 4 — Specialize in Manipulation
 
-![Phase 4 illustration](https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=1400&h=360&fit=crop&q=80 "Pick a track — manipulation, mobile, drones, RL, or vision")
+![Phase 4 illustration](https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=1400&h=360&fit=crop&q=80 "Manipulation — arms, grippers, motion planning, grasping")
 
-> 🎯 **Goal:** Choose **one** track based on interest.
+> ⏰ **6–10 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Plan and execute collision-free arm motions, then build a full pick-and-place pipeline in simulation.
 
-| Track | What you'll learn | Sim tools |
-|---|---|---|
-| 🦾 **Manipulation** (arms) | MoveIt 2, inverse kinematics, motion planning, grasping | Gazebo + MoveIt, or Isaac Sim |
-| 🚗 **Mobile robots** (continue) | Multi-robot, outdoor nav, GPS fusion (robot_localization) | Gazebo |
-| 🚁 **Drones** | PX4 + ROS 2 bridge, attitude control | Gazebo + PX4 SITL |
-| 🧠 **Reinforcement learning** | Sim-to-real transfer, policy learning | NVIDIA Isaac Lab |
-| 👁️ **Computer vision** | YOLO + ROS 2, depth cameras, visual servoing | Gazebo with RGB-D plugin |
+> ✅ **Why manipulation for you:** highest density of industrial/commercial jobs, deepest math (kinematics, dynamics, optimization, contact), and the gap between hobby and pro is real — so 25 years of engineering experience pays off fast.
 
-> 💡 **For an experienced developer**, I'd recommend **🦾 manipulation** — it's where most industrial/commercial robotics jobs are, and the math is meaty enough to stay interesting.
+> 💡 Other valid tracks if your interest pulls elsewhere: 🚗 mobile (continue Phase 3), 🚁 drones (PX4 + ROS 2), 🧠 RL (NVIDIA Isaac Lab), 👁️ vision (YOLO + RGB-D). Same plan structure applies — swap MoveIt for the equivalent stack.
+
+### 📚 The 4 things to actually learn
+
+| # | Topic | Why it matters | Where to start |
+|:-:|---|---|---|
+| 1 | **🧮 Kinematics & dynamics** | The language of arms — FK, IK, Jacobians, singularities | [Modern Robotics (Lynch & Park)](https://hades.mech.northwestern.edu/index.php/Modern_Robotics) — free book + Coursera |
+| 2 | **🦿 MoveIt 2** | The de-facto ROS 2 motion-planning framework | [MoveIt 2 tutorials](https://moveit.picknik.ai/main/index.html) |
+| 3 | **🤏 Grasping & MTC** | Going from "move to pose" to "grab that object" | [MoveIt Task Constructor](https://github.com/moveit/moveit_task_constructor) |
+| 4 | **👁️ Perception → pose** | Closing the loop: RGB-D → object → grasp pose | [Open3D](https://www.open3d.org/) + [GPD](https://github.com/atenpas/gpd) |
+
+### 🤖 Pick your simulated arm
+
+| Tier | Arm | Why | Real-world cost |
+|:-:|---|---|---|
+| 🥇 | **Franka Emika Panda** (FR3) | The default MoveIt demo robot — every tutorial uses it. Best ecosystem. | ~$15K (free in sim) |
+| 🥈 | **Universal Robots UR5e / UR10e** | What you'll meet in industry. `ur_robot_driver` is rock solid. | ~$35K (free in sim) |
+| 🥉 | **WidowX 250 S** | Affordable real arm if you want to buy one later (Phase 5) | ~$2.4K (buyable) |
+
+> 💡 **Start with Panda in sim** — every tutorial works out of the box. Switch to UR later for industry skills, or WidowX if you plan to buy real hardware.
+
+### 🗓️ Suggested 8-week roadmap
+
+**Weeks 1–2 · Foundations**
+- 🧠 Modern Robotics ch. 3–6: rigid-body motions, FK, velocity kinematics, IK
+- 📦 Install MoveIt 2 + Panda demo: `ros2 launch moveit2_tutorials demo.launch.py`
+- 🎮 In RViz, drag the end-effector, hit **Plan & Execute**, watch IK solve
+
+**Weeks 3–4 · MoveIt programmatic API**
+- 🐍 `moveit_py` (Python) — joint-space goals, pose goals, Cartesian paths
+- 🚧 Add collision objects (the green box in the screenshot below)
+- 📐 Constrained planning: orientation locked (e.g., keep a glass upright)
+
+**Weeks 5–6 · Pick-and-place with MTC**
+- 🧱 MoveIt Task Constructor stages: approach → pre-grasp → close gripper → lift → place
+- 🦾 Spawn Panda + gripper + table + 3 cubes in Gazebo
+- 🎯 Pick each cube, stack them. 10/10 successful runs = ✅ done
+
+**Weeks 7–8 · Vision-driven grasping**
+- 🎥 Add an RGB-D camera (sim) — `/depth/points` PointCloud2
+- 🔍 Segment table + objects (Open3D plane fit + Euclidean clustering)
+- ✋ Generate grasp poses (GPD or hand-crafted top-down grasps)
+- 🤝 Feed pose → MTC → execute. Now your robot picks up things it has never seen before.
+
+### 🛠️ Tools you'll live in
+
+- 🦿 **MoveIt 2** — planning, IK, collision checking, trajectory execution
+- 🌍 **Gazebo (Harmonic)** — physics sim
+- 🎛️ **`ros2_control`** — joint-trajectory controllers, gripper command interfaces
+- 🐍 **`moveit_py`** — Python bindings for fast prototyping
+- 📊 **RViz2 MotionPlanning plugin** — your debugger
+- 🧪 **MoveIt Task Constructor (MTC)** — composable manipulation pipelines
+
+> 🎯 **Mini-project deliverable:** Vision-driven pick-and-place — Panda picks an unknown object from clutter on a table using only an RGB-D camera + MTC, and places it in a target zone.
+
+### ✅ Validation Checkpoint
+
+Run the demo, then add complexity step by step:
+```bash
+# 1) Baseline — Panda demo + MotionPlanning panel in RViz
+ros2 launch moveit2_tutorials demo.launch.py
+
+# 2) Programmatic motion (your code)
+ros2 run my_panda_pkg pose_goal_demo.py
+
+# 3) Pick & place pipeline (MTC)
+ros2 launch my_panda_pkg pick_place.launch.py
+ros2 topic echo /execute_task_solution/_action/status --once
+
+# 4) Vision-driven (final boss)
+ros2 launch my_panda_pkg vision_pick.launch.py
+```
+✅ Achieved when: vision pipeline runs end-to-end, Panda picks a never-before-seen object from clutter, places it in the target zone — **10/10 successful runs** = Phase 4 done.
+
+<figure class="screenshot">
+  <img src="images/moveit-result.png" alt="RViz2 showing a Franka Emika Panda robot arm next to a green collision box, planned via MoveIt 2" />
+  <figcaption>🦾 Success looks like this — your Panda arm in RViz2 with a collision object in the scene. Once you can drag the end-effector, hit <em>Plan &amp; Execute</em>, and watch MoveIt route around obstacles, you've crossed into manipulation.</figcaption>
+</figure>
 
 <div class="copilot-note">
 
-### 🤖 How Copilot can boost Phase 4
+### 🤖 How Copilot can boost Phase 4 (manipulation)
 
-**If you pick manipulation (🦾):**
-- 🦿 **Generate MoveIt 2 config** — `moveit_setup_assistant` is GUI, but I can produce the same package files via code, including SRDF, controllers, kinematics solvers (KDL/TracIK).
-- 🧮 **Explain & code IK/FK** from scratch when you want to understand the math, not just call MoveIt.
-- 🤝 **Pick-and-place pipelines** — full grasp planning + execution scripts using MoveIt Task Constructor.
-
-**If you pick RL / vision / drones**, I'll generate scaffolding for those too — Isaac Lab environments, YOLO+ROS bridges, PX4 SITL launch configs.
-
-- 🔁 **Translate paper algorithms** into ROS 2 code — give me an arXiv link, I'll give you a runnable node.
-- 📚 **Curate a study path** — given a focus area, I'll build a week-by-week reading + coding plan.
+- 🦿 **Generate full MoveIt config packages** — SRDF, controllers, kinematics solver choice (KDL / TracIK / pick_ik), planning pipelines (OMPL / Pilz / STOMP). Faster than the setup_assistant GUI and gives you something to read.
+- 🧮 **Derive & code IK/FK by hand** — when you want to actually understand what MoveIt does under the hood. I'll walk you through the Modern Robotics math line by line.
+- 🤏 **Write MoveIt Task Constructor pipelines** — full pick-and-place stage trees in C++ or Python, with grasp generation and approach/retreat planning.
+- 🎥 **Wire up perception → grasping** — `pcl_ros` / Open3D pipelines: point cloud → segment → cluster → fit primitives → emit grasp `PoseStamped`.
+- 🪲 **Debug planning failures** — paste the OMPL log or `move_group` errors; I'll diagnose collision matrix issues, IK timeouts, joint-limit violations, octomap inflation.
+- 🧪 **Author headless test scenarios** — `pytest` + `launch_testing` to run "spawn cubes, attempt pick, assert success" in CI.
+- 📚 **Curate a week-by-week study plan** — Modern Robotics chapter pairings with hands-on MoveIt exercises so theory and code reinforce each other.
 
 </div>
 
 ---
-
 ## 🛒 Phase 5 — Buy Hardware
 
 ![Phase 5 illustration](https://images.unsplash.com/photo-1546776230-bb86256870ce?w=1400&h=360&fit=crop&q=80 "Choose your first real robot — TurtleBot, arm, or drone")
@@ -408,3 +547,4 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 - [ ] 📺 Subscribe to [Articulated Robotics](https://articulatedrobotics.xyz/) on YouTube
 - [ ] 🔖 Bookmark https://docs.ros.org/en/jazzy/ and https://navigation.ros.org/
 - [ ] 🎯 Decide your Phase 4 specialization tentatively (you can change later)
+
