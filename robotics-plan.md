@@ -1,13 +1,6 @@
-# 🤖 Robotics Learning Plan
+# 🤖 Aviad Ezra's Robotics Learning Plan
 
-### *From Simulation to Real Hardware*
-
-![ROS 2](https://img.shields.io/badge/ROS_2-Jazzy-22314E?style=for-the-badge&logo=ros&logoColor=white)
-![Gazebo](https://img.shields.io/badge/Gazebo-Harmonic-FB6904?style=for-the-badge)
-![Ubuntu](https://img.shields.io/badge/Ubuntu-24.04_LTS-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![C++](https://img.shields.io/badge/C++-17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)
-![Duration](https://img.shields.io/badge/Duration-3--6_months-success?style=for-the-badge)
+### *Tailored for a senior dev in 🇮🇱 Israel · From Simulation to Real Hardware*
 
 > **👤 Audience:** Senior developer (25 yrs), based in 🇮🇱 Israel, new to robotics.
 > **🎯 Strategy:** Master the *software stack* in simulation first, then buy hardware with confidence.
@@ -28,78 +21,91 @@
 
 ## 🛠️ Phase 0 — Environment Setup
 
-> ⏰ **1 weekend** &nbsp;·&nbsp; 🎯 **Goal:** ROS 2 running locally, "Hello, turtle" working.
+![Phase 0 illustration](https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1400&h=360&fit=crop&q=80 "Set up your Linux + ROS 2 environment")
 
-- 🐧 **OS:** Ubuntu 22.04 or 24.04. See **"💻 Setup on a Windows machine"** below for the recommended WSL2 path if you don't want to dual-boot yet.
-- 📦 **Install ROS 2 Jazzy** (current LTS, supported until 2029): https://docs.ros.org/en/jazzy/Installation.html
-- 🌍 **Install Gazebo Harmonic** (the new Gazebo, bundled with Jazzy).
-- 💻 **Editor:** VS Code with the `ROS` and `Python`/`C++` extensions.
-- 🐍 **Languages:** Python first (fast iteration), C++ later (real-time nodes, controllers).
+> ⏰ **1 weekend** &nbsp;·&nbsp; 🎯 **Goal:** ROS 2 + Gazebo running inside WSL2 on your Windows 11 laptop, "Hello, turtle" working.
 
-> ✅ **Validation checkpoint:** Run `ros2 run turtlesim turtlesim_node` and drive the turtle with `turtle_teleop_key`. If this works, you're set.
+We're going **WSL2 + WSLg + Ubuntu 24.04** — keeps you on Windows, gets you a real Linux for ROS, and WSLg gives you the GUI windows (RViz/Gazebo) for free.
 
-### 💻 Setup on a Windows machine
+### 📋 Step-by-step setup
 
-You can absolutely do Phases 0–4 from Windows. Ranked by recommendation:
+**1. Confirm prerequisites** (open PowerShell as Administrator)
+```powershell
+winver           # must be Windows 11 (build 22000+)
+wsl --status     # if "not installed", that's expected — next step fixes it
+```
 
-#### 🥇 WSL2 + WSLg (recommended — start here)
+**2. Install WSL + Ubuntu 24.04**
+```powershell
+wsl --install -d Ubuntu-24.04
+```
+Reboot when prompted. On first launch, set a Linux username + password (any value — local only).
 
-Windows 11 + Ubuntu 24.04 inside WSL2, with WSLg providing built-in Linux GUI support.
+**3. Update GPU drivers (host Windows)**
+- 🟢 NVIDIA: install the latest [CUDA-on-WSL driver](https://developer.nvidia.com/cuda/wsl)
+- 🔴 AMD: latest Adrenalin
+- 🔵 Intel: latest from intel.com/download
 
-- ✅ Stay in Windows; install with: `wsl --install -d Ubuntu-24.04`
-- ✅ ROS 2 Jazzy + RViz2 work great out of the box
-- ✅ VS Code "Remote - WSL" extension = seamless dev experience
-- ⚠️ **Gazebo Harmonic**: works on Win 11 with WSLg + recent NVIDIA/AMD GPU drivers, but can be flaky. Performance is roughly 60–80% of native Ubuntu. Some plugins occasionally crash.
-- ⚠️ **USB devices** (real lidars, microcontrollers in Phase 5): need [`usbipd-win`](https://github.com/dorssel/usbipd-win) to forward USB into WSL. Extra friction but well-documented.
-- ⚠️ **Real-time control** (later phases): WSL2 cannot run a `RT_PREEMPT` kernel. Serious motor control eventually needs native Linux.
+**4. Install ROS 2 Jazzy + Gazebo inside Ubuntu**
 
-**📋 Setup checklist:**
-1. Confirm Windows 11 (Win 10 WSLg works but is noticeably worse).
-2. Update GPU drivers — NVIDIA's CUDA-on-WSL driver or AMD Adrenalin latest.
-3. `wsl --install -d Ubuntu-24.04` in an admin PowerShell, then reboot.
-4. Inside Ubuntu: install ROS 2 Jazzy via the official docs.
-5. Install VS Code + the **Remote - WSL** extension on Windows.
-6. Test: `ros2 run turtlesim turtlesim_node` — the GUI should pop up automatically via WSLg.
+From the Ubuntu shell:
+```bash
+# Enable universe + add ROS 2 apt key
+sudo apt update && sudo apt install -y software-properties-common curl
+sudo add-apt-repository universe
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
+  -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] \
+  http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" \
+  | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
 
-> 🏆 **Verdict:** Best balance of "start today" vs "tools work." Recommended for Phases 0–4.
+# Install desktop bundle (RViz2, demos, etc.) + Gazebo
+sudo apt update
+sudo apt install -y ros-jazzy-desktop-full ros-jazzy-ros-gz
 
-#### 🥈 Docker Desktop + ROS containers
+# Source ROS in every new shell
+echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
 
-Run `osrf/ros:jazzy-desktop-full` in Docker.
+**5. VS Code with Remote-WSL**
+- Install [VS Code](https://code.visualstudio.com/) on Windows (already done ✅)
+- Install the **WSL** extension (formerly "Remote - WSL")
+- From Ubuntu shell: `code .` opens VS Code attached to WSL
 
-- ✅ Quick start, isolated, easy to nuke and retry
-- ⚠️ GUI apps (RViz, Gazebo) need an X server setup
-- ⚠️ Limited GPU passthrough on Windows
-- ❌ Worst experience for graphical simulation
+### ✅ Validation checkpoint
+From the Ubuntu shell:
+```bash
+ros2 run turtlesim turtlesim_node
+```
+A blue window with a little turtle should pop up on your Windows desktop (via WSLg). In a second Ubuntu shell:
+```bash
+ros2 run turtlesim turtle_teleop_key
+```
+Use the arrow keys — if the turtle moves, **Phase 0 is done**.
 
-> 💡 **Verdict:** Fine for headless ROS 2 fundamentals; painful for Gazebo.
+### 🛟 Common WSL2 debugging gotchas
 
-#### 🥉 Native Windows ROS 2
+| Symptom | Fix |
+|---|---|
+| ❌ `wsl --install` errors with `0x8007007e` or hangs | Update Windows fully, ensure virtualization is enabled in BIOS (`systeminfo` → look for "Virtualization Enabled In Firmware: Yes") |
+| ❌ Turtlesim window never appears | Run `wsl --update` from Windows PowerShell; restart WSL: `wsl --shutdown` then reopen Ubuntu |
+| ❌ Gazebo opens but renders black / 1 FPS | GPU driver not WSL-aware. Reinstall the CUDA-on-WSL (NVIDIA) or latest Adrenalin (AMD) driver on **Windows host**, not inside Ubuntu |
+| ❌ Audio / GPU acceleration missing | `wsl --update` then `wsl --shutdown`; confirm WSLg with `wslg --version` |
+| ❌ DNS / apt update fails | Edit `/etc/wsl.conf` (in Ubuntu): add `[network]\ngenerateResolvConf = false`, then write `/etc/resolv.conf` with `nameserver 8.8.8.8`. Restart WSL. |
+| ❌ Cannot access Windows files / slow | Keep ROS workspaces under `~/` (the Linux filesystem), **not** under `/mnt/c/`. Cross-filesystem I/O is 10–100× slower. |
+| ❌ "WSLg failed to start" on external monitor (DisplayLink) | Move the WSLg window to the **internal laptop display** for now; DisplayLink + WSLg have known issues |
+| ❌ USB devices (lidars, microcontrollers) not visible | Install [`usbipd-win`](https://github.com/dorssel/usbipd-win) on Windows host, then `usbipd attach --busid <id> --wsl` |
+| ❌ `command not found: ros2` after a new terminal | The `source /opt/ros/jazzy/setup.bash` line wasn't added to `~/.bashrc` — re-run step 4's last block |
+| ⚠️ Real-time motor control later (Phase 6) | WSL2 can't do `RT_PREEMPT`. For hard-real-time needs you'll eventually want native Ubuntu — but you can defer that for many months. |
 
-Microsoft officially supports ROS 2 on Windows.
-
-- ✅ No Linux at all
-- ❌ **Gazebo Harmonic is not officially supported on Windows** — deal-breaker for Phases 2–4
-- ❌ Most tutorials assume Linux; constant translation
-- ❌ Smaller community, fewer Stack Overflow answers
-
-> ⚠️ **Verdict:** Don't recommend for a learning journey.
-
-#### 🏆 Dual-boot Ubuntu (gold standard, defer if possible)
-
-- ✅ Best performance, every tool works first-try
-- ✅ When you reach real hardware, USB and RT just work
-- ❌ Requires partitioning + reboot to switch
-
-> 💡 **Verdict:** Worth it when you commit beyond Phase 2 or buy hardware. Not required to start.
-
-#### 🎯 Recommendation for this plan
-
-**Start on WSL2 today.** If Gazebo gets painful during Phase 2, or when you buy hardware in Phase 5, set up a dual-boot Ubuntu partition. By then you'll know exactly what you need and the migration is trivial (same ROS 2 packages, same code).
+> 🏆 **Verdict:** WSL2 + WSLg covers Phases 0–4 comfortably on your Win 11 + Core Ultra 7 + RTX 500 Ada laptop. If Gazebo ever becomes painful, or you need RT_PREEMPT for real hardware, set up dual-boot Ubuntu at that point — your ROS code will move over unchanged.
 
 ---
 
 ## 📚 Phase 1 — ROS 2 Fundamentals
+
+![Phase 1 illustration](https://images.unsplash.com/photo-1518770660439-4636190af475?w=1400&h=360&fit=crop&q=80 "Learn the ROS 2 building blocks — nodes, topics, services")
 
 > ⏰ **2–3 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Comfortable with nodes, topics, services, actions, parameters, launch files, tf2, URDF.
 
@@ -124,6 +130,8 @@ Microsoft officially supports ROS 2 on Windows.
 
 ## 🌍 Phase 2 — Simulation Deep Dive
 
+![Phase 2 illustration](https://images.unsplash.com/photo-1581090700227-1e37b190418e?w=1400&h=360&fit=crop&q=80 "Spawn and control robots in a Gazebo simulated world")
+
 > ⏰ **3–4 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Spawn a robot in Gazebo, drive it, read its sensors, visualize in RViz2.
 
 🤖 **Pick a simulated robot to learn on:**
@@ -143,6 +151,8 @@ Microsoft officially supports ROS 2 on Windows.
 ---
 
 ## 🧭 Phase 3 — Navigation & Perception
+
+![Phase 3 illustration](https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1400&h=360&fit=crop&q=80 "Build maps, localize and navigate autonomously")
 
 > ⏰ **4–6 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Autonomous navigation in a known and unknown map.
 
@@ -167,6 +177,8 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 
 ## 🎯 Phase 4 — Pick a Specialization
 
+![Phase 4 illustration](https://images.unsplash.com/photo-1561557944-6e7860d1a7eb?w=1400&h=360&fit=crop&q=80 "Pick a track — manipulation, mobile, drones, RL, or vision")
+
 > 🎯 **Goal:** Choose **one** track based on interest.
 
 | Track | What you'll learn | Sim tools |
@@ -182,6 +194,8 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 ---
 
 ## 🛒 Phase 5 — Buy Hardware
+
+![Phase 5 illustration](https://images.unsplash.com/photo-1546776230-bb86256870ce?w=1400&h=360&fit=crop&q=80 "Choose your first real robot — TurtleBot, arm, or drone")
 
 > ⏰ **After ~3 months of sim work**
 
@@ -224,6 +238,8 @@ The ROS 2 navigation stack — 👉 https://navigation.ros.org/
 ---
 
 ## 🔗 Phase 6 — Sim-to-Real Bridge
+
+![Phase 6 illustration](https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=1400&h=360&fit=crop&q=80 "Bring what you built in simulation into the real world")
 
 > ⏰ **2–4 weeks after hardware arrives**
 
