@@ -141,14 +141,67 @@
 
 **Goal:** ROS 2 running locally, "Hello, turtle" working.
 
-- **OS:** Ubuntu 22.04 or 24.04 (native dual-boot strongly preferred over WSL2 for graphics/USB later).
-  - Alternative: Docker with `osrf/ros:jazzy-desktop-full` if you want to stay on your current OS short-term.
+- **OS:** Ubuntu 22.04 or 24.04. See **"Setup on a Windows machine"** below for the recommended WSL2 path if you don't want to dual-boot yet.
 - **Install ROS 2 Jazzy** (current LTS, supported until 2029): https://docs.ros.org/en/jazzy/Installation.html
 - **Install Gazebo Harmonic** (the new Gazebo, bundled with Jazzy).
 - **Editor:** VS Code with the `ROS` and `Python`/`C++` extensions.
 - **Languages:** Python first (fast iteration), C++ later (real-time nodes, controllers).
 
 **Validation checkpoint:** Run `ros2 run turtlesim turtlesim_node` and drive the turtle with `turtle_teleop_key`. If this works, you're set.
+
+### Setup on a Windows machine
+
+You can absolutely do Phases 0–4 from Windows. Ranked by recommendation:
+
+#### 🥇 WSL2 + WSLg (recommended — start here)
+Windows 11 + Ubuntu 24.04 inside WSL2, with WSLg providing built-in Linux GUI support.
+
+- ✅ Stay in Windows; install with: `wsl --install -d Ubuntu-24.04`
+- ✅ ROS 2 Jazzy + RViz2 work great out of the box
+- ✅ VS Code "Remote - WSL" extension = seamless dev experience
+- ⚠️ **Gazebo Harmonic**: works on Win 11 with WSLg + recent NVIDIA/AMD GPU drivers, but can be flaky. Performance is roughly 60–80% of native Ubuntu. Some plugins occasionally crash.
+- ⚠️ **USB devices** (real lidars, microcontrollers in Phase 5): need [`usbipd-win`](https://github.com/dorssel/usbipd-win) to forward USB into WSL. Extra friction but well-documented.
+- ⚠️ **Real-time control** (later phases): WSL2 cannot run a `RT_PREEMPT` kernel. Serious motor control eventually needs native Linux.
+
+**Setup checklist:**
+1. Confirm Windows 11 (Win 10 WSLg works but is noticeably worse).
+2. Update GPU drivers — NVIDIA's CUDA-on-WSL driver or AMD Adrenalin latest.
+3. `wsl --install -d Ubuntu-24.04` in an admin PowerShell, then reboot.
+4. Inside Ubuntu: install ROS 2 Jazzy via the official docs.
+5. Install VS Code + the **Remote - WSL** extension on Windows.
+6. Test: `ros2 run turtlesim turtlesim_node` — the GUI should pop up automatically via WSLg.
+
+**Verdict:** Best balance of "start today" vs "tools work." Recommended for Phases 0–4.
+
+#### 🥈 Docker Desktop + ROS containers
+Run `osrf/ros:jazzy-desktop-full` in Docker.
+
+- ✅ Quick start, isolated, easy to nuke and retry
+- ⚠️ GUI apps (RViz, Gazebo) need an X server setup
+- ⚠️ Limited GPU passthrough on Windows
+- ❌ Worst experience for graphical simulation
+
+**Verdict:** Fine for headless ROS 2 fundamentals; painful for Gazebo.
+
+#### 🥉 Native Windows ROS 2
+Microsoft officially supports ROS 2 on Windows.
+
+- ✅ No Linux at all
+- ❌ **Gazebo Harmonic is not officially supported on Windows** — deal-breaker for Phases 2–4
+- ❌ Most tutorials assume Linux; constant translation
+- ❌ Smaller community, fewer Stack Overflow answers
+
+**Verdict:** Don't recommend for a learning journey.
+
+#### 🏆 Dual-boot Ubuntu (gold standard, defer if possible)
+- ✅ Best performance, every tool works first-try
+- ✅ When you reach real hardware, USB and RT just work
+- ❌ Requires partitioning + reboot to switch
+
+**Verdict:** Worth it when you commit beyond Phase 2 or buy hardware. Not required to start.
+
+#### Recommendation for this plan
+**Start on WSL2 today.** If Gazebo gets painful during Phase 2, or when you buy hardware in Phase 5, set up a dual-boot Ubuntu partition. By then you'll know exactly what you need and the migration is trivial (same ROS 2 packages, same code).
 
 ---
 
@@ -236,12 +289,12 @@ Choose **one** based on interest:
 ### Recommended first physical robots (by track)
 
 **Mobile ground robot:**
-- 🥇 **TurtleBot 4 Lite** (~$1,300 USD) — official ROS 2 reference platform, matches what you simulated. Best beginner choice.
+- 🥇 **TurtleBot 4 Lite** (~<script type="text/markdown" id="embedded-md">,300 USD) — official ROS 2 reference platform, matches what you simulated. Best beginner choice.
 - 💰 **LeoRover** or **Husarion ROSbot 2R** — slightly more capable, outdoor-ish.
 - 🛠️ **DIY:** Raspberry Pi 5 + RPLidar A1 + a chassis from Aliexpress (~$300). Much more learning per shekel, but expect frustration.
 
 **Arm:**
-- 🥇 **WidowX 250 S** (Trossen Robotics, ~$2,400) — well-supported in ROS 2/MoveIt.
+- 🥇 **WidowX 250 S** (Trossen Robotics, ~</script>,400) — well-supported in ROS 2/MoveIt.
 - 💰 **SO-100 / SO-ARM100** by Hugging Face LeRobot (~$120 in parts, 3D-printed) — bleeding edge but cheap and a phenomenal learning project.
 - Industrial taste: **uFactory xArm Lite 6** (~$5K) — overkill but real-world relevant.
 
@@ -392,6 +445,7 @@ At this pace: Phase 0–3 done in ~3 months, hardware ordered, by month 5–6 yo
 </script>
 </body>
 </html>
+
 
 
 
