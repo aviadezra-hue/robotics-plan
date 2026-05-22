@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Robotics Learning Plan</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.5.1/github-markdown.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #59636e;
+    --accent: #0969da;
+    --border: #d1d9e0;
+    --sidebar-bg: #f6f8fa;
+    --sidebar-w: 300px;
+    --header-h: 56px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #9198a1;
+      --accent: #4493f8;
+      --border: #30363d;
+      --sidebar-bg: #161b22;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    height: var(--header-h);
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 16px; margin: 0; flex: 1; font-weight: 600; }
+  header .meta { font-size: 12px; color: var(--muted); }
+  #menuBtn {
+    display: none;
+    background: none; border: 1px solid var(--border); color: var(--fg);
+    border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 14px;
+  }
+  .layout { display: flex; min-height: calc(100vh - var(--header-h)); }
+  aside {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    position: sticky; top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+  }
+  aside h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 12px; }
+  #toc { list-style: none; padding: 0; margin: 0; font-size: 14px; line-height: 1.5; }
+  #toc li { margin: 2px 0; }
+  #toc a {
+    display: block; padding: 4px 8px; border-radius: 4px;
+    color: var(--fg); text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  #toc a:hover { background: rgba(127,127,127,.12); color: var(--accent); }
+  #toc a.active { background: rgba(9,105,218,.10); border-left-color: var(--accent); color: var(--accent); font-weight: 600; }
+  #toc .lvl-3 { padding-left: 14px; font-size: 13px; color: var(--muted); }
+  #toc .lvl-4 { padding-left: 28px; font-size: 12px; color: var(--muted); }
+  main {
+    flex: 1; min-width: 0;
+    padding: 32px 40px 80px;
+    max-width: 920px;
+  }
+  .markdown-body {
+    background: transparent;
+    color: var(--fg);
+    font-size: 16px;
+  }
+  .markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 { scroll-margin-top: calc(var(--header-h) + 16px); }
+  .markdown-body table { display: table; width: 100%; }
+  .markdown-body a { color: var(--accent); }
+  .markdown-body hr { border-color: var(--border); }
+  .markdown-body code { background: rgba(127,127,127,.15); }
+  .markdown-body pre { background: var(--sidebar-bg); }
+  .backdrop {
+    display: none; position: fixed; inset: var(--header-h) 0 0 0;
+    background: rgba(0,0,0,.4); z-index: 10;
+  }
+  @media (max-width: 820px) {
+    :root { --sidebar-w: 280px; }
+    #menuBtn { display: inline-block; }
+    aside {
+      position: fixed; top: var(--header-h); left: 0;
+      transform: translateX(-100%);
+      transition: transform .2s ease;
+      z-index: 15;
+      box-shadow: 2px 0 12px rgba(0,0,0,.15);
+    }
+    body.nav-open aside { transform: translateX(0); }
+    body.nav-open .backdrop { display: block; }
+    main { padding: 20px 18px 60px; }
+    .markdown-body { font-size: 15px; }
+  }
+  /* Loader */
+  #loader { padding: 40px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <button id="menuBtn" aria-label="Toggle navigation">☰ Menu</button>
+  <h1>🤖 Robotics Learning Plan</h1>
+  <span class="meta" id="meta"></span>
+</header>
+<div class="layout">
+  <aside id="sidebar">
+    <h2>On this page</h2>
+    <ul id="toc"></ul>
+  </aside>
+  <div class="backdrop" id="backdrop"></div>
+  <main>
+    <article id="content" class="markdown-body">
+      <script type="text/markdown" id="embedded-md">
+# Robotics Learning Plan — From Simulation to Real Hardware
+
+**Audience:** Senior developer (25 yrs), based in Israel, no prior robotics experience.
+**Strategy:** Master the *software stack* in simulation first, then buy hardware with confidence.
+**Total time to a working physical robot:** ~3–6 months of part-time work.
+
+---
+
+## Guiding Principles
+
+1. **Simulate before you solder.** Bugs in simulation cost minutes; bugs on hardware cost weeks (and broken motors).
+2. **Standard stack = ROS 2.** It's the lingua franca of modern robotics — every serious platform, paper, and job uses it. Skip ROS 1 (EOL May 2025).
+3. **Pick one robot archetype first.** Don't try mobile + arm + drone simultaneously. Recommended start: **mobile ground robot (differential drive)** — easiest physics, richest tutorials, cheapest hardware.
+4. **Math matters.** You don't need a PhD, but brush up on linear algebra, rigid-body transforms (SE(3)), and basic probability (for SLAM/Kalman filters).
+
+---
+
+## Phase 0 — Environment Setup (1 weekend)
+
+**Goal:** ROS 2 running locally, "Hello, turtle" working.
+
+- **OS:** Ubuntu 22.04 or 24.04 (native dual-boot strongly preferred over WSL2 for graphics/USB later).
+  - Alternative: Docker with `osrf/ros:jazzy-desktop-full` if you want to stay on your current OS short-term.
+- **Install ROS 2 Jazzy** (current LTS, supported until 2029): https://docs.ros.org/en/jazzy/Installation.html
+- **Install Gazebo Harmonic** (the new Gazebo, bundled with Jazzy).
+- **Editor:** VS Code with the `ROS` and `Python`/`C++` extensions.
+- **Languages:** Python first (fast iteration), C++ later (real-time nodes, controllers).
+
+**Validation checkpoint:** Run `ros2 run turtlesim turtlesim_node` and drive the turtle with `turtle_teleop_key`. If this works, you're set.
+
+---
+
+## Phase 1 — ROS 2 Fundamentals (2–3 weeks)
+
+**Goal:** Comfortable with nodes, topics, services, actions, parameters, launch files, tf2, URDF.
+
+**Primary resource:** Official ROS 2 tutorials — work through *every* beginner + intermediate tutorial:
+https://docs.ros.org/en/jazzy/Tutorials.html
+
+**Supplement with one book/course (pick one):**
+- 📘 *A Concise Introduction to Robot Programming with ROS 2* — Fairchild & Harman (best for experienced devs).
+- 🎥 Articulated Robotics YouTube channel (Josh Newans) — outstanding ROS 2 + Gazebo content, free.
+- 🎥 The Construct's free ROS 2 Basics course (browser-based, no install).
+
+**Mini-project deliverable:** Write a ROS 2 package (Python) with:
+- A publisher node emitting fake odometry.
+- A subscriber that logs and computes velocity.
+- A launch file starting both with parameters.
+- A custom message type.
+
+---
+
+## Phase 2 — Simulation Deep Dive (3–4 weeks)
+
+**Goal:** Spawn a robot in Gazebo, drive it, read its sensors, visualize in RViz2.
+
+**Pick a simulated robot to learn on:**
+- **TurtleBot 4** (preferred — has excellent Gazebo model, mirrors a real robot you can buy later).
+- Alternative: build your own URDF from scratch (Articulated Robotics has a great series on this).
+
+**Topics to cover:**
+- URDF / Xacro — describing the robot's geometry, joints, inertia.
+- Gazebo plugins for differential drive, lidar, camera, IMU.
+- RViz2 — visualizing tf trees, point clouds, costmaps.
+- `ros2_control` — the standard hardware abstraction layer (do this now so swapping to real hardware later is trivial).
+
+**Mini-project deliverable:** Teleop a simulated TurtleBot around a Gazebo world; visualize its lidar scan in RViz2.
+
+---
+
+## Phase 3 — Navigation & Perception (4–6 weeks)
+
+**Goal:** Autonomous navigation in a known and unknown map.
+
+**Two pillars:**
+
+1. **Nav2** (https://navigation.ros.org/) — the ROS 2 navigation stack.
+   - Run the Nav2 + TurtleBot 4 tutorial in simulation.
+   - Understand: costmaps, global/local planners, behavior trees, recovery behaviors.
+
+2. **SLAM** — mapping + localization.
+   - `slam_toolbox` for 2D lidar SLAM.
+   - `nav2_amcl` for localization in a known map.
+   - Optional next step: RTAB-Map for visual/3D SLAM.
+
+**Mini-project deliverable:** In simulation, drive the robot to map an environment, save the map, restart, localize, and send navigation goals from RViz2 — fully autonomous.
+
+---
+
+## Phase 4 — Pick a Specialization (ongoing)
+
+Choose **one** based on interest:
+
+| Track | What you'll learn | Sim tools |
+|---|---|---|
+| **Manipulation** (arms) | MoveIt 2, inverse kinematics, motion planning, grasping | Gazebo + MoveIt, or Isaac Sim |
+| **Mobile robots** (continue) | Multi-robot, outdoor nav, GPS fusion (robot_localization) | Gazebo |
+| **Drones** | PX4 + ROS 2 bridge, attitude control | Gazebo + PX4 SITL |
+| **Reinforcement learning** | Sim-to-real transfer, policy learning | NVIDIA Isaac Lab |
+| **Computer vision** | YOLO + ROS 2, depth cameras, visual servoing | Gazebo with RGB-D plugin |
+
+**For an experienced developer**, I'd recommend **manipulation** — it's where most industrial/commercial robotics jobs are, and the math is meaty enough to stay interesting.
+
+---
+
+## Phase 5 — Buy Hardware (after ~3 months of sim work)
+
+**Selection criteria — in order:**
+1. Has an *officially supported* ROS 2 driver.
+2. Active community / recent commits.
+3. Replacement parts available in Israel or shippable.
+4. Within your budget for a *learning* robot — don't buy your dream machine first.
+
+### Recommended first physical robots (by track)
+
+**Mobile ground robot:**
+- 🥇 **TurtleBot 4 Lite** (~$1,300 USD) — official ROS 2 reference platform, matches what you simulated. Best beginner choice.
+- 💰 **LeoRover** or **Husarion ROSbot 2R** — slightly more capable, outdoor-ish.
+- 🛠️ **DIY:** Raspberry Pi 5 + RPLidar A1 + a chassis from Aliexpress (~$300). Much more learning per shekel, but expect frustration.
+
+**Arm:**
+- 🥇 **WidowX 250 S** (Trossen Robotics, ~$2,400) — well-supported in ROS 2/MoveIt.
+- 💰 **SO-100 / SO-ARM100** by Hugging Face LeRobot (~$120 in parts, 3D-printed) — bleeding edge but cheap and a phenomenal learning project.
+- Industrial taste: **uFactory xArm Lite 6** (~$5K) — overkill but real-world relevant.
+
+**Drone:**
+- **Holybro X500 V2 + Pixhawk 6C** — standard PX4 + ROS 2 dev kit.
+
+### Israel-specific shipping notes
+- Most US/EU robotics vendors ship to Israel but watch for VAT (17%) + customs above ~$75 USD declared value.
+- **Local options:** RobotShop ships to IL; some Aliexpress sellers stock chassis/motors with reasonable delivery. For 3D-printed builds (SO-ARM100), local makerspaces (XLN in Tel Aviv, Hackerspace TLV) have printers.
+- Lidar units and lithium batteries occasionally get held in customs — declare honestly.
+
+---
+
+## Phase 6 — Sim-to-Real Bridge (after hardware arrives, 2–4 weeks)
+
+Expected pain points and how to handle them:
+- **Calibration:** real sensors are noisy; tune your filters with real data.
+- **`ros2_control` hardware interface:** if you used it in sim, swapping is mostly config.
+- **Timing/latency:** the real world is not deterministic. Use RT_PREEMPT kernel if needed.
+- **Power management:** batteries die at the worst times. Add voltage monitoring early.
+
+**Validation milestone:** reproduce your Phase 3 autonomous-navigation milestone on the real robot in your apartment.
+
+---
+
+## Ongoing Learning & Community
+
+- 📖 *Modern Robotics* by Kevin Lynch (free book + Coursera) — the canonical theory text.
+- 📖 *Probabilistic Robotics* by Thrun et al. — for when you want to *understand* SLAM, not just run it.
+- 🌐 https://discourse.ros.org/ — official forum, very active.
+- 🌐 r/ROS, r/robotics on Reddit.
+- 🇮🇱 **Israeli community:** IROB (Israel Robotics Association), Technion & TAU robotics labs occasionally host open talks, ROS Israel meetup group (irregular but real).
+- 🎓 Free advanced courses: MIT 6.4210 (Robotic Manipulation, Russ Tedrake) — uses Drake instead of ROS, but the lectures are world-class.
+
+---
+
+## Suggested Weekly Cadence
+
+- **Weekdays:** 30–60 min of reading/tutorials.
+- **Weekends:** 3–4 hour focused session — building, debugging, the mini-project for that phase.
+
+At this pace: Phase 0–3 done in ~3 months, hardware ordered, by month 5–6 you have a working autonomous robot in your home.
+
+---
+
+## Quick-Start Checklist (do this week)
+
+- [ ] Install Ubuntu 24.04 (dual-boot) or set up Docker.
+- [ ] Install ROS 2 Jazzy + Gazebo Harmonic.
+- [ ] Run the turtlesim hello-world.
+- [ ] Subscribe to Articulated Robotics on YouTube.
+- [ ] Bookmark https://docs.ros.org/en/jazzy/ and https://navigation.ros.org/.
+- [ ] Decide your Phase 4 specialization tentatively (you can change later).
+
+</script><div id="loader">Loading…</div>
+    </article>
+  </main>
+</div>
+
+<script>
+(async function () {
+  if (typeof marked === 'undefined') {
+    document.getElementById('content').innerHTML = '<p style="color:#c00;padding:20px">Failed to load marked.js from CDN. Check internet connection.</p>';
+    return;
+  }
+  const MD_FILE = 'robotics-plan.md';
+  const content = document.getElementById('content');
+  const toc = document.getElementById('toc');
+  const meta = document.getElementById('meta');
+  const menuBtn = document.getElementById('menuBtn');
+  const backdrop = document.getElementById('backdrop');
+
+  function slugify(text) {
+    return text.toLowerCase()
+      .replace(/[^\w\s\-—–]/g, '')
+      .trim()
+      .replace(/[\s—–]+/g, '-')
+      .replace(/-+/g, '-');
+  }
+
+  function loadMarkdown() {
+    const embedded = document.getElementById('embedded-md');
+    if (embedded && embedded.textContent.trim()) return embedded.textContent;
+    throw new Error('Embedded markdown not found');
+  }
+  function render(md) {
+    marked.setOptions({ gfm: true, breaks: false, headerIds: false, mangle: false });
+    const html = marked.parse(md);
+    content.innerHTML = html;
+
+    // Assign IDs to headings + build TOC
+    const headings = content.querySelectorAll('h1, h2, h3, h4');
+    const used = new Map();
+    const tocItems = [];
+    headings.forEach(h => {
+      let base = slugify(h.textContent);
+      let id = base;
+      let n = (used.get(base) || 0) + 1;
+      used.set(base, n);
+      if (n > 1) id = base + '-' + n;
+      h.id = id;
+
+      const level = parseInt(h.tagName.substring(1), 10);
+      if (level >= 2 && level <= 3) {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '#' + id;
+        a.textContent = h.textContent;
+        a.className = 'lvl-' + level;
+        li.appendChild(a);
+        toc.appendChild(li);
+        tocItems.push({ id, link: a, el: h });
+      }
+    });
+
+    // Scroll spy
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        const id = entry.target.id;
+        const item = tocItems.find(t => t.id === id);
+        if (!item) return;
+        if (entry.isIntersecting) {
+          tocItems.forEach(t => t.link.classList.remove('active'));
+          item.link.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-60px 0px -70% 0px', threshold: 0 });
+    tocItems.forEach(t => observer.observe(t.el));
+
+    // Mobile: close drawer on link click
+    toc.addEventListener('click', e => {
+      if (e.target.tagName === 'A') document.body.classList.remove('nav-open');
+    });
+
+    meta.textContent = headings.length + ' sections';
+  }
+
+  menuBtn.addEventListener('click', () => document.body.classList.toggle('nav-open'));
+  backdrop.addEventListener('click', () => document.body.classList.remove('nav-open'));
+
+  try {
+    const md = loadMarkdown();
+    render(md);
+  } catch (e) {
+    content.innerHTML = '<p style="color:#c00">Failed to load <code>' + MD_FILE + '</code>: ' + e.message + '</p>';
+  }
+})();
+</script>
+</body>
+</html>
+
+
+
