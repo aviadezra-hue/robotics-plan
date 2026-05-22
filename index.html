@@ -385,6 +385,15 @@ At this pace: Phase 0–3 done in ~3 months, hardware ordered, by month 5–6 yo
     const html = marked.parse(md);
     content.innerHTML = html;
 
+    // External links open in new tab
+    content.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (!href.startsWith('#')) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+
     // Assign IDs to headings + build TOC
     const headings = content.querySelectorAll('h1, h2, h3, h4');
     const used = new Map();
