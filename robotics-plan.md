@@ -603,13 +603,370 @@ The walkthrough above covers what you need to move on to the mini-project. If yo
 
 ### 🛠️ Step 3 — Write your first ROS 2 package (the mini-project)
 
-🚧 *Coming soon — say "expand Step 3" and I'll inline a full walkthrough: `ros2 pkg create` → publisher node → subscriber node → custom message type → launch file → build & test, ending at the Validation Checkpoint below.*
+> 🎯 **Mini-project deliverable:** A ROS 2 workspace with:
+> - A **custom message type** (`VelocityStats.msg`)
+> - A **publisher node** emitting fake odometry (`nav_msgs/Odometry`)
+> - A **subscriber node** that logs incoming poses and publishes computed velocity stats
+> - A **launch file** that starts both with parameters (publish rate, frame id)
+>
+> By the end you'll have built it with `colcon`, run it under `ros2 launch`, and watched live data flow through `ros2 topic echo`. **This is what 90% of "real" ROS 2 development looks like.**
 
-> 🎯 **Mini-project deliverable:** Write a ROS 2 package (Python) with:
-> - A publisher node emitting fake odometry
-> - A subscriber that logs and computes velocity
-> - A launch file starting both with parameters
-> - A custom message type
+We'll use two packages so you learn the canonical split most teams use in production:
+- `odom_demo_msgs` — a **CMake/ament_cmake** package that defines the custom message (Python packages can't generate IDL code, so msgs live in their own CMake package).
+- `odom_demo` — a **Python (ament_python)** package with the publisher + subscriber + launch file.
+
+All commands run inside your existing `~/ros2_ws` from Step 1.
+
+---
+
+**3.1 Open a sourced terminal & cd to your workspace**
+
+Open Ubuntu (any new terminal — your `~/.bashrc` from Step 1.6 already sources ROS 2 + the workspace overlay automatically):
+
+```bash
+cd ~/ros2_ws/src
+```
+
+**Expected:** no output. You're now in the source folder where new packages live alongside any others you've already created.
+
+**Why it matters:** every ROS 2 package lives in `<workspace>/src/<pkg_name>/`. `colcon build` (run from the workspace root) scans `src/` recursively and builds whatever it finds.
+
+---
+
+**3.2 Create the custom-message package**
+
+```bash
+ros2 pkg create --build-type ament_cmake odom_demo_msgs \
+  --dependencies std_msgs builtin_interfaces
+```
+
+**Expected:** `ros2` scaffolds `odom_demo_msgs/` with `CMakeLists.txt`, `package.xml`, and empty `include/` + `src/` folders.
+
+**Why it matters:** `ament_cmake` is required to generate the Python/C++ bindings for custom `.msg`/`.srv`/`.action` files via `rosidl`. The two dependencies are what our message will reference.
+
+Now define the message itself:
+
+```bash
+mkdir -p odom_demo_msgs/msg
+cat > odom_demo_msgs/msg/VelocityStats.msg << 'EOF'
+# Computed velocity statistics from /odom samples
+builtin_interfaces/Time stamp
+float64 linear_speed       # m/s (magnitude of linear velocity in xy)
+float64 angular_speed      # rad/s (absolute yaw rate)
+float64 distance_traveled  # cumulative meters since node start
+uint32  sample_count       # number of /odom messages seen
+EOF
+```
+
+**Expected:** no output; file created. `cat` confirms:
+```bash
+cat odom_demo_msgs/msg/VelocityStats.msg
+```
+
+**Why it matters:** message definitions are language-agnostic. Both Python and C++ nodes get auto-generated classes from this one `.msg` file.
+
+Wire the message into the build. Edit `odom_demo_msgs/CMakeLists.txt` — find the `find_package(ament_cmake REQUIRED)` line and add **right after it**:
+
+```cmake
+find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/VelocityStats.msg"
+  DEPENDENCIES builtin_interfaces
+)
+
+ament_export_dependencies(rosidl_default_runtime)
+```
+
+And in `odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywhere among the existing `<depend>` lines):
+
+```xml
+<buildtool_depend>rosidl_default_generators</buildtool_depend>
+<exec_depend>rosidl_default_runtime</exec_depend>
+<member_of_group>rosidl_interface_packages</member_of_group>
+```
+
+**Why it matters:** these three additions are the canonical "this package contains messages" declaration. Without them, `colcon build` would create the package but no `VelocityStats` class would be importable.
+
+---
+
+**3.3 Create the Python package**
+
+```bash
+cd ~/ros2_ws/src
+ros2 pkg create --build-type ament_python odom_demo \
+  --dependencies rclpy nav_msgs geometry_msgs odom_demo_msgs
+```
+
+**Expected:** `odom_demo/` scaffolded with `package.xml`, `setup.py`, `setup.cfg`, `resource/odom_demo`, and an empty `odom_demo/odom_demo/` Python module folder.
+
+**Why it matters:** `ament_python` packages are plain `setup.py` projects — no CMake. The dependencies you pass become `<exec_depend>` entries in `package.xml` so `rosdep` knows what to install.
+
+---
+
+**3.4 Write the publisher node (fake odometry)**
+
+```bash
+cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_publisher.py << 'EOF'
+import math
+import rclpy
+from rclpy.node import Node
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Quaternion
+
+class OdomPublisher(Node):
+    def __init__(self):
+        super().__init__('odom_pub')
+        self.declare_parameter('publish_rate_hz', 10.0)
+        self.declare_parameter('frame_id', 'odom')
+        self.declare_parameter('radius', 2.0)
+        self.declare_parameter('angular_speed', 0.5)  # rad/s
+
+        rate = self.get_parameter('publish_rate_hz').value
+        self.frame_id = self.get_parameter('frame_id').value
+        self.radius = self.get_parameter('radius').value
+        self.omega = self.get_parameter('angular_speed').value
+
+        self.pub = self.create_publisher(Odometry, '/odom', 10)
+        self.timer = self.create_timer(1.0 / rate, self.tick)
+        self.t0 = self.get_clock().now()
+        self.get_logger().info(
+            f'odom_pub up: rate={rate}Hz frame={self.frame_id} '
+            f'radius={self.radius}m omega={self.omega}rad/s'
+        )
+
+    def tick(self):
+        now = self.get_clock().now()
+        t = (now - self.t0).nanoseconds * 1e-9
+        theta = self.omega * t
+
+        msg = Odometry()
+        msg.header.stamp = now.to_msg()
+        msg.header.frame_id = self.frame_id
+        msg.child_frame_id = 'base_link'
+        msg.pose.pose.position.x = self.radius * math.cos(theta)
+        msg.pose.pose.position.y = self.radius * math.sin(theta)
+        msg.pose.pose.orientation = Quaternion(
+            x=0.0, y=0.0, z=math.sin(theta / 2), w=math.cos(theta / 2)
+        )
+        msg.twist.twist.linear.x = self.radius * self.omega
+        msg.twist.twist.angular.z = self.omega
+        self.pub.publish(msg)
+
+def main():
+    rclpy.init()
+    rclpy.spin(OdomPublisher())
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+EOF
+```
+
+**Expected:** no output; file created. Sanity-check with `wc -l` — should be ~45 lines.
+
+**Why it matters:** this is the canonical ROS 2 Python node pattern: subclass `Node`, declare parameters, create publishers/timers in `__init__`, do work in callbacks. We're faking a robot driving in a circle so `/odom` has realistic-looking data.
+
+---
+
+**3.5 Write the subscriber node (computes velocity stats)**
+
+```bash
+cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_subscriber.py << 'EOF'
+import math
+import rclpy
+from rclpy.node import Node
+from nav_msgs.msg import Odometry
+from odom_demo_msgs.msg import VelocityStats
+
+class OdomSubscriber(Node):
+    def __init__(self):
+        super().__init__('odom_sub')
+        self.sub = self.create_subscription(Odometry, '/odom', self.on_odom, 10)
+        self.pub = self.create_publisher(VelocityStats, '/velocity_stats', 10)
+        self.prev = None
+        self.distance = 0.0
+        self.count = 0
+        self.get_logger().info('odom_sub up: listening on /odom, publishing /velocity_stats')
+
+    def on_odom(self, msg: Odometry):
+        self.count += 1
+        x, y = msg.pose.pose.position.x, msg.pose.pose.position.y
+        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+
+        linear_speed = math.hypot(msg.twist.twist.linear.x, msg.twist.twist.linear.y)
+        angular_speed = abs(msg.twist.twist.angular.z)
+
+        if self.prev is not None:
+            dx, dy = x - self.prev[0], y - self.prev[1]
+            self.distance += math.hypot(dx, dy)
+        self.prev = (x, y, t)
+
+        out = VelocityStats()
+        out.stamp = msg.header.stamp
+        out.linear_speed = linear_speed
+        out.angular_speed = angular_speed
+        out.distance_traveled = self.distance
+        out.sample_count = self.count
+        self.pub.publish(out)
+
+        if self.count % 10 == 0:
+            self.get_logger().info(
+                f'#{self.count}: pos=({x:.2f},{y:.2f}) '
+                f'v={linear_speed:.2f}m/s w={angular_speed:.2f}rad/s '
+                f'dist={self.distance:.2f}m'
+            )
+
+def main():
+    rclpy.init()
+    rclpy.spin(OdomSubscriber())
+    rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
+EOF
+```
+
+**Expected:** file created. The subscriber logs every 10th sample (so once per second at 10 Hz) and republishes computed stats on `/velocity_stats` using your **custom message** — closing the loop on the deliverable.
+
+**Why it matters:** this is the other half of the canonical pattern — a `create_subscription` callback that does work and republishes. Real nodes (Nav2 costmaps, EKF localizers, controllers) follow exactly this shape, just with more math.
+
+---
+
+**3.6 Wire the entry points and write the launch file**
+
+ROS 2 needs to know which Python functions are runnable nodes. Edit `~/ros2_ws/src/odom_demo/setup.py` and find the `entry_points={...}` block. Replace it with:
+
+```python
+    entry_points={
+        'console_scripts': [
+            'odom_publisher = odom_demo.odom_publisher:main',
+            'odom_subscriber = odom_demo.odom_subscriber:main',
+        ],
+    },
+```
+
+Also make sure the launch folder gets installed — find the `data_files=[...]` list in `setup.py` and add this entry (keep the existing ones):
+
+```python
+        ('share/' + package_name + '/launch', ['launch/demo.launch.py']),
+```
+
+You may also need `import os` and `from glob import glob` at the top of `setup.py` if not already present.
+
+Now create the launch file:
+
+```bash
+mkdir -p ~/ros2_ws/src/odom_demo/launch
+cat > ~/ros2_ws/src/odom_demo/launch/demo.launch.py << 'EOF'
+from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    rate = LaunchConfiguration('publish_rate_hz')
+    radius = LaunchConfiguration('radius')
+
+    return LaunchDescription([
+        DeclareLaunchArgument('publish_rate_hz', default_value='10.0'),
+        DeclareLaunchArgument('radius', default_value='2.0'),
+
+        Node(
+            package='odom_demo',
+            executable='odom_publisher',
+            name='odom_pub',
+            output='screen',
+            parameters=[{
+                'publish_rate_hz': rate,
+                'radius': radius,
+                'frame_id': 'odom',
+                'angular_speed': 0.5,
+            }],
+        ),
+        Node(
+            package='odom_demo',
+            executable='odom_subscriber',
+            name='odom_sub',
+            output='screen',
+        ),
+    ])
+EOF
+```
+
+**Expected:** no output; launch file created. It declares two CLI-overridable arguments (`publish_rate_hz`, `radius`) and starts both nodes.
+
+**Why it matters:** launch files are the production deployment unit in ROS 2. `DeclareLaunchArgument` + `LaunchConfiguration` is how you parameterize them so the same launch file works in sim, lab, and field.
+
+---
+
+**3.7 Build & source**
+
+```bash
+cd ~/ros2_ws
+colcon build --packages-select odom_demo_msgs odom_demo
+```
+
+**Expected:** ~10–30 seconds of build output ending with:
+```
+Summary: 2 packages finished [XXs]
+```
+
+**Why it matters:** `--packages-select` builds *only* these two packages (faster than rebuilding everything). `odom_demo_msgs` builds first because `odom_demo` depends on it — colcon figures the order out from `package.xml`.
+
+Now re-source the workspace so the new packages are on the path **in this shell**:
+
+```bash
+source install/setup.bash
+```
+
+**Expected:** no output. (Future shells get this automatically via the `source ~/ros2_ws/install/setup.bash` line you added to `~/.bashrc` in Step 1.6.)
+
+---
+
+**3.8 Run it & validate**
+
+In **terminal 1** — launch both nodes:
+
+```bash
+ros2 launch odom_demo demo.launch.py
+```
+
+**Expected:** within a second you should see interleaved logs like:
+```
+[odom_pub-1] [INFO] odom_pub up: rate=10.0Hz frame=odom radius=2.0m omega=0.5rad/s
+[odom_sub-2] [INFO] odom_sub up: listening on /odom, publishing /velocity_stats
+[odom_sub-2] [INFO] #10: pos=(1.96,-0.40) v=1.00m/s w=0.50rad/s dist=1.00m
+[odom_sub-2] [INFO] #20: pos=(1.84,-0.79) v=1.00m/s w=0.50rad/s dist=2.00m
+```
+
+In **terminal 2** — inspect the system live:
+
+```bash
+ros2 topic list                          # /odom and /velocity_stats should appear
+ros2 topic echo /velocity_stats --once   # one sample of your custom message
+ros2 topic hz /odom                      # confirms ~10 Hz
+ros2 node info /odom_pub                 # lists publisher with type nav_msgs/msg/Odometry
+ros2 param get /odom_pub radius          # → 2.0
+```
+
+**Try overriding a parameter at launch time:**
+
+```bash
+ros2 launch odom_demo demo.launch.py publish_rate_hz:=50.0 radius:=5.0
+```
+
+**Expected:** subscriber log shows `v=2.50m/s` (= radius × omega = 5.0 × 0.5) and `ros2 topic hz /odom` reports ~50 Hz. That confirms launch arguments flow through to ROS parameters correctly.
+
+**Why it matters:** this end-to-end loop — *build → launch → introspect → tweak params → re-launch* — is **the development cycle** you'll use every day. Everything past this point in your robotics career (Nav2 stacks, MoveIt motion plans, custom controllers) is just bigger versions of this same loop.
+
+---
+
+### 🧠 You now know
+
+By the end of Step 3 you can: scaffold ROS 2 packages (both flavors), author a custom message, write publisher and subscriber nodes in Python with parameters, wire them into a launch file with arguments, build with `colcon`, and validate the running system with the Step 2 introspection tools. **That's a working ROS 2 developer's full toolkit.**
+
 
 ### ✅ Validation Checkpoint
 
