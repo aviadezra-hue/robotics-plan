@@ -181,7 +181,7 @@ You need three packages: **colcon** (the build system), **rosdep** (resolves sys
 ```bash
 sudo apt update
 ```
-The first `sudo` of the day will prompt for your Ubuntu password. *(If you set up passwordless sudo earlier, you won't be asked.)*
+On this machine, `sudo` is configured **passwordless** for the `aviad` user (set up in Phase 0), so it runs immediately. On a fresh install where you set a password during first launch, this is where Ubuntu would ask for it.
 
 **Command 2 of 4** — install the three tool packages:
 ```bash
