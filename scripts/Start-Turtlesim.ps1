@@ -45,7 +45,9 @@ function Find-WindowByTitle([string]$needle) {
 
 function Force-Foreground([IntPtr]$h) {
   [WslWin]::ShowWindow($h, 9) | Out-Null   # SW_RESTORE
-  [WslWin]::BringWindowToTop($h) | Out-Null
+  # Pin as topmost so nothing can hide it; user can unpin via Win+Z or system menu
+  # HWND_TOPMOST = -1, SWP_SHOWWINDOW = 0x40
+  [WslWin]::SetWindowPos($h, [IntPtr]::new(-1), 300, 150, 600, 600, 0x40) | Out-Null
   $fg = [WslWin]::GetForegroundWindow()
   $procId = [uint32]0
   $fgThread = [WslWin]::GetWindowThreadProcessId($fg, [ref]$procId)

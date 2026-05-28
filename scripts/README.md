@@ -20,5 +20,19 @@ prevention — this script works around that.
 ```
 
 ### Note
-If you see `[WARN:COPY MODE]` in the window title, WSLg fell back to software (CPU) rendering.
-Fine for turtlesim; for Gazebo (Phase 2+) we'll want to fix GPU passthrough.
+The helper pins the window as **always-on-top** at (300, 150), 600×600.
+Click it once to focus, then to un-pin run from PowerShell:
+```powershell
+Add-Type 'using System; using System.Runtime.InteropServices;
+public class P { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f); }'
+# find by title, then SetWindowPos(hwnd, HWND_NOTOPMOST=-2, 0,0,0,0, SWP_NOMOVE|SWP_NOSIZE = 0x13)
+```
+Or just close the WSL terminal.
+
+### One-time machine setup that's been applied
+`C:\Users\avezra\.wslconfig` has `gpuSupport=false` — WSLg's compositor was
+glitching in `[WARN:COPY MODE]` on this multi-GPU laptop (Intel Arc + NVIDIA +
+DisplayLink), rendering windows as black. Disabling GPU passthrough makes WSLg
+use llvmpipe (CPU) for its compositor. Fine for turtlesim & most Phase 1
+exercises. For **Phase 2 (Gazebo)** we'll need to re-enable it and select the
+NVIDIA adapter explicitly.
