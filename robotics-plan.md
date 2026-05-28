@@ -444,6 +444,11 @@ ros2 service call /spawn turtlesim/srv/Spawn \
 ```
 **Expected:** response `name: turtle2`, and a second turtle appears in the middle of the canvas.
 
+<figure class="screenshot">
+  <img src="images/phase1-services.png" alt="TurtleSim window showing two turtles on a blue canvas: turtle1 at the bottom-left after a teleport_absolute call, and turtle2 in the middle next to a previously-drawn circle. A diagonal line shows the teleport jump path." />
+  <figcaption>🛰️ My Step 2.5 result — three services in action: <code>teleport_absolute</code> jumped turtle1 to the bottom-left corner (diagonal line is the teleport jump), <code>set_pen</code> changed the trail color, and <code>spawn</code> created turtle2 in the middle. All driven from the command line — no code written yet.</figcaption>
+</figure>
+
 **Why it matters:** topics for streams (sensor data, odometry, commands), services for events (calibrate, save map, switch mode). Wrong choice = bad architecture.
 
 ---
