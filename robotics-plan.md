@@ -85,8 +85,8 @@ ros2 run turtlesim turtle_teleop_key
 Use the arrow keys — if the turtle moves, **Phase 0 is done**.
 
 <figure class="screenshot">
-  <img src="images/turtlesim-result.png" alt="TurtleSim window showing two turtles that have drawn a square and a circle on a pink canvas" />
-  <figcaption>🐢 Success looks like this — turtles responding to commands and drawing paths. If your window shows the turtle moving (even just a wiggle), your ROS 2 + WSLg stack is fully working.</figcaption>
+  <img src="images/phase0-turtlesim.png" alt="TurtleSim window showing a turtle that has drawn a connected pentagon-like path on a blue canvas, rendered through VcXsrv on Windows 11" />
+  <figcaption>🐢 Real result from my own Phase 0 run — turtle responding to arrow-key teleop and drawing its path. Window rendered via VcXsrv on Windows 11 (note the "X" icon in the title bar). If your turtle moves and leaves a trail, ROS 2 + your display stack are fully working.</figcaption>
 </figure>
 
 ### 🛟 Common WSL2 debugging gotchas
