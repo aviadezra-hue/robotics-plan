@@ -73,6 +73,32 @@ source ~/.bashrc
 - Install the **WSL** extension (formerly "Remote - WSL")
 - From Ubuntu shell: `code .` opens VS Code attached to WSL
 
+**6. If WSLg renders GUIs as a black window — switch to VcXsrv** *(needed on multi-GPU laptops, e.g. Intel + NVIDIA + DisplayLink dock)*
+
+Symptom: turtlesim/RViz/Gazebo windows open but are entirely black, or appear in the taskbar but won't come to the foreground (look for `[WARN:COPY MODE]` in the window title). The fix is to bypass WSLg with a native Windows X server.
+
+```powershell
+# On Windows host (PowerShell as Admin)
+winget install --id marha.VcXsrv
+# Open the firewall for X11 traffic from WSL
+New-NetFirewallRule -DisplayName "VcXsrv (WSL X11)" -Direction Inbound `
+  -Protocol TCP -LocalPort 6000-6063 -Action Allow -Profile Any
+```
+
+Launch VcXsrv with the right flags (or save these into the Startup folder so it auto-starts):
+```
+"C:\Program Files\VcXsrv\vcxsrv.exe" -multiwindow -clipboard -wgl -ac -noprimary
+```
+
+Then in Ubuntu, append to `~/.bashrc` and reload:
+```bash
+echo 'export DISPLAY=$(ip route show default | awk "{print \$3}"):0' >> ~/.bashrc
+echo 'unset WAYLAND_DISPLAY' >> ~/.bashrc
+source ~/.bashrc
+```
+
+GUI apps now render through VcXsrv (the window title shows an "X" icon instead of the Tux/penguin) and the COPY-MODE bug is gone.
+
 ### ✅ Validation checkpoint
 From the Ubuntu shell:
 ```bash
