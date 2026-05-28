@@ -571,6 +571,11 @@ ros2 run turtlesim turtle_teleop_key
 
 **Why it matters:** launch files are how you wire complex multi-node systems together — Nav2, MoveIt, your own packages — declaratively, in Python, with arguments and conditions.
 
+<figure class="screenshot">
+  <img src="images/phase1-launch.png" alt="TurtleSim window on a blue canvas: two turtles drawing identical zig-zag paths. The teleop'd turtle1 is at the bottom-left, the mimic-driven turtle2 is up and to the right, both having traced the same arrow-key sequence." />
+  <figcaption>🚀 My Step 2.8 result — one launch file started <code>turtlesim_node</code> + a second <code>turtlesim_node</code> + a <code>mimic</code> node. Driving <code>turtle1</code> with arrow keys made <code>turtle2</code> trace the exact same path. That's the magic of topic remapping in a launch file.</figcaption>
+</figure>
+
 Press `Ctrl+C` in each terminal when done.
 
 ---
