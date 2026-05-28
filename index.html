@@ -670,6 +670,99 @@ Use the arrow keys — if the turtle moves, **Phase 0 is done**.
 
 > ⏰ **2–3 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Comfortable with nodes, topics, services, actions, parameters, launch files, tf2, URDF.
 
+### ⌨️ Terminal essentials *(quick reference — bookmark this)*
+
+You're about to spend a lot of time in the Ubuntu terminal (and in Phase 3 you'll juggle 3–5 of them at once). These are the shortcuts that turn the terminal from a chore into a tool. **All of these work in the default GNOME / Windows Terminal Ubuntu shell** unless noted.
+
+#### 🧹 Clean the screen / control output
+
+| Shortcut | What it does | When you'll want it |
+|---|---|---|
+| `Ctrl+L` | Clear the screen (but keep history accessible by scrolling up) | After a noisy build, before running the next command |
+| `clear` | Same as `Ctrl+L` (a command, not a shortcut) | When you want to type it instead |
+| `reset` | Hard-reset the terminal — clears screen *and* fixes a corrupted terminal state | After `cat`ing a binary file by accident and seeing garbage characters |
+| `Ctrl+Shift+K` *(Windows Terminal)* | Clear the buffer entirely (no scrollback) | When you want a truly fresh slate |
+
+#### 🛑 Stop / pause / resume processes
+
+| Shortcut | What it does |
+|---|---|
+| `Ctrl+C` | **Send SIGINT** — politely ask the running command to stop. Use this for `ros2 launch`, `ros2 topic echo`, teleop nodes, etc. |
+| `Ctrl+\` | Send SIGQUIT — harder kill, dumps core. Use if `Ctrl+C` doesn't work. |
+| `Ctrl+Z` | Suspend the foreground process (it pauses, doesn't die) |
+| `bg` | Resume a `Ctrl+Z`'d process in the background |
+| `fg` | Bring a backgrounded process back to the foreground |
+| `jobs` | List currently suspended / backgrounded processes |
+| `kill %1` | Kill backgrounded job number 1 (from `jobs` output) |
+
+#### ✏️ Edit the current line faster
+
+| Shortcut | What it does |
+|---|---|
+| `Ctrl+A` / `Ctrl+E` | Jump to start / end of the line |
+| `Alt+B` / `Alt+F` | Move backward / forward one **word** |
+| `Ctrl+W` | Delete the word before the cursor |
+| `Ctrl+U` | Delete from cursor to start of line (great for "scrap this and retype") |
+| `Ctrl+K` | Delete from cursor to end of line |
+| `Ctrl+Y` | Paste back whatever you last deleted with `Ctrl+W` / `Ctrl+U` / `Ctrl+K` |
+| `Ctrl+T` | Swap the two characters before the cursor (typo fix) |
+
+#### 🔍 Recall previous commands
+
+| Shortcut | What it does |
+|---|---|
+| `↑` / `↓` | Step through command history |
+| `Ctrl+R` | **Reverse search** — type a fragment, hit `Ctrl+R` again to find older matches. `Enter` to run, `Esc` to edit before running. |
+| `!!` | Repeat the previous command. Combine: `sudo !!` re-runs the last command with sudo. |
+| `!ros2` | Re-run the most recent command starting with `ros2` |
+| `history \| grep launch` | Search your history for anything containing "launch" |
+
+#### 📋 Copy & paste (the trap)
+
+In a Linux terminal `Ctrl+C` is **kill**, not copy! Use:
+
+| Shortcut | What it does |
+|---|---|
+| `Ctrl+Shift+C` | Copy selected text |
+| `Ctrl+Shift+V` | Paste |
+| **Middle-click** | Paste the most recently selected text (X11 primary selection) |
+| **Just select text** | Auto-copies on most terminals — no `Ctrl+Shift+C` needed |
+
+#### 🪟 Tabs, splits & multiple terminals
+
+You'll need many terminals running at once (one for `ros2 launch`, one for teleop, one for `ros2 topic echo`, etc.). Options, best → simplest:
+
+| Tool | How | Why |
+|---|---|---|
+| **`tmux`** | `sudo apt install tmux` then `tmux` to start, `Ctrl+B` then `"` to split horizontal, `%` to split vertical, arrow keys to navigate, `d` to detach (and `tmux attach` to come back) | Survives SSH disconnects, lets you save layouts, runs on any Linux. Worth learning once for a 10× workflow boost. |
+| **GNOME Terminal tabs** | `Ctrl+Shift+T` new tab, `Ctrl+PgUp/PgDn` switch | Built-in, no install |
+| **Windows Terminal panes** *(if you launched Ubuntu from WT)* | `Alt+Shift+D` split, `Alt+arrow` navigate | Native split UI on Windows |
+
+#### 🗂️ Navigate the filesystem
+
+| Shortcut | What it does |
+|---|---|
+| `Tab` | **Autocomplete** filenames, package names, even `ros2` subcommands. **Hit it constantly** — saves you from typos. |
+| `Tab Tab` | Show all possible completions when there's more than one |
+| `cd -` | Go back to the previous directory |
+| `cd` (no args) | Go to `~` (home) |
+| `pushd /some/path` / `popd` | Push current dir onto a stack, jump elsewhere, pop back |
+| `Ctrl+D` | Exit the current shell (same as typing `exit`) |
+
+#### 🎁 ROS-specific helpers
+
+| Trick | What it does |
+|---|---|
+| `ros2 <Tab><Tab>` | List every `ros2` subcommand |
+| `ros2 launch <pkg> <Tab>` | Autocomplete the available launch files in a package |
+| `ros2 topic echo /<Tab>` | Autocomplete topic names from the live system |
+| `printenv \| grep ROS` | Show every ROS-related env var currently set (sanity check that `~/.bashrc` did the right thing) |
+| `ros2 daemon stop && ros2 daemon start` | Hard-restart the ROS 2 discovery daemon if `ros2 node list` is hanging or showing stale entries |
+
+> 💡 **The single highest-ROI habit**: hit `Tab` after every two or three keystrokes. ROS 2 names are long (`turtlesim_node`, `geometry_msgs/msg/Twist`, `tb3_simulation_launch.py`) and Tab-completion knows them all.
+
+---
+
 ### 📋 Step 1 — Create your ROS 2 workspace (do this once)
 
 A *workspace* is just a folder where your ROS 2 packages live and where the `colcon` build tool compiles them. Every ROS 2 project you write will live here.
