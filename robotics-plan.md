@@ -345,7 +345,7 @@ ros2 node info /turtlesim
 
 ---
 
-**2.3 Inspect and drive topics from the CLI**
+**2.3 Inspect topics from the CLI**
 
 ```bash
 ros2 topic list
@@ -362,17 +362,41 @@ ros2 topic hz /turtle1/pose
 ```
 Reports the publish rate. **Expected:** `average rate: 62.5`. Ctrl-C.
 
-Now drive the turtle yourself by publishing to `cmd_vel`:
-```bash
-ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/Twist "{linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.5}}"
-```
-**Expected:** the turtle curves forward-and-left for an instant. `--once` sends one message. Drop `--once` and add `-r 1` for "publish at 1 Hz continuously" — the turtle will keep curving.
-
-**Why it matters:** `topic echo`, `hz`, and `pub` are 80% of how you debug a real robot from the terminal — confirm a sensor is publishing, check its rate, inject fake commands.
+**Why it matters:** `topic echo` and `hz` are 80% of how you debug a real robot from the terminal — confirm a sensor is publishing and check its rate.
 
 ---
 
-**2.4 Call services (request/response)**
+**2.4 Publish to a topic — drive the turtle from the CLI**
+
+Instead of using the keyboard teleop, you can inject commands yourself by publishing directly to `/turtle1/cmd_vel`. The message type is `geometry_msgs/Twist` (a linear velocity vector + an angular velocity vector).
+
+Run this in **Terminal C**:
+
+```bash
+ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/Twist \
+  "{linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.5}}"
+```
+
+**What this means:**
+- `--once` → send a single message, then exit (drop it and add `-r 1` for "publish at 1 Hz continuously")
+- `/turtle1/cmd_vel` → the topic to publish on
+- `geometry_msgs/Twist` → the message type
+- `linear.x: 2.0` → move forward at 2 units/sec
+- `angular.z: 1.5` → rotate counter-clockwise at 1.5 rad/sec
+- Setting both gives you a curve
+
+**Expected:** the turtle curves forward-and-left, leaving a drawn trail behind it.
+
+<figure class="screenshot">
+  <img src="images/phase1-cmd-vel-pub.png" alt="TurtleSim window with the yellow turtle in the lower-right area of the blue canvas, with a curved white trail showing the arc the turtle just drove after a single ros2 topic pub command" />
+  <figcaption>🐢 My Step 2.4 result — one <code>ros2 topic pub --once</code> command sent <code>linear.x=2.0</code> and <code>angular.z=1.5</code>, and the turtle drew a curve. You just programmed a robot from the command line.</figcaption>
+</figure>
+
+**Why it matters:** publishing to topics from the CLI is how you smoke-test a controller, manually drive a robot when teleop is broken, or fake a sensor input during bring-up.
+
+---
+
+**2.5 Call services (request/response)**
 
 Topics are streams; **services** are one-off RPC calls.
 
@@ -388,18 +412,21 @@ ros2 service type /turtle1/teleport_absolute
 
 **Teleport the turtle** to the bottom-left corner:
 ```bash
-ros2 service call /turtle1/teleport_absolute turtlesim/srv/TeleportAbsolute "{x: 1.0, y: 1.0, theta: 0.0}"
+ros2 service call /turtle1/teleport_absolute turtlesim/srv/TeleportAbsolute \
+  "{x: 1.0, y: 1.0, theta: 0.0}"
 ```
 
 **Change the pen color to red**, then draw with it from Terminal B:
 ```bash
-ros2 service call /turtle1/set_pen turtlesim/srv/SetPen "{r: 255, g: 0, b: 0, width: 3, 'off': 0}"
+ros2 service call /turtle1/set_pen turtlesim/srv/SetPen \
+  "{r: 255, g: 0, b: 0, width: 3, 'off': 0}"
 ```
 *(Note: `off` is quoted because it's a YAML reserved word.)*
 
 **Spawn a second turtle:**
 ```bash
-ros2 service call /spawn turtlesim/srv/Spawn "{x: 5.5, y: 5.5, theta: 0.0, name: 'turtle2'}"
+ros2 service call /spawn turtlesim/srv/Spawn \
+  "{x: 5.5, y: 5.5, theta: 0.0, name: 'turtle2'}"
 ```
 **Expected:** response `name: turtle2`, and a second turtle appears in the middle of the canvas.
 
@@ -407,7 +434,7 @@ ros2 service call /spawn turtlesim/srv/Spawn "{x: 5.5, y: 5.5, theta: 0.0, name:
 
 ---
 
-**2.5 Read and write parameters live**
+**2.6 Read and write parameters live**
 
 Parameters are runtime config that a node exposes. They can be set at launch *or* changed live.
 
@@ -442,7 +469,7 @@ Later you can restore them with `ros2 param load /turtlesim ~/ros2_ws/configs/tu
 
 ---
 
-**2.6 Record and replay with `ros2 bag`**
+**2.7 Record and replay with `ros2 bag`**
 
 Bag files are the killer feature for debugging — capture all messages on the wire, replay later on your laptop without the robot.
 
@@ -474,7 +501,7 @@ ros2 bag play demo_bag
 
 ---
 
-**2.7 Compose multiple nodes with `ros2 launch`**
+**2.8 Compose multiple nodes with `ros2 launch`**
 
 So far you've opened one terminal per node. Launch files bring up many nodes from a single command — that's how every real robot starts up.
 
