@@ -1,38 +1,41 @@
 # scripts/
 
-Helper scripts for running the robotics plan locally on Windows + WSLg.
+Helper scripts for running the robotics plan locally on Windows + WSL.
+
+## Why these exist
+WSLg on this multi-GPU laptop (Intel Arc Pro + NVIDIA RTX 500 + DisplayLink dock)
+falls into a broken `[WARN:COPY MODE]` state and renders Qt/X11 windows as
+all-black framebuffers. Workaround: use **VcXsrv** as a real Windows-native
+X server, bypassing WSLg entirely.
+
+## One-time setup (already done on this machine)
+
+1. **VcXsrv** installed: `winget install --id marha.VcXsrv`
+2. **Windows Firewall** rule "VcXsrv (WSL X11)" allows TCP 6000–6063 inbound.
+3. **`~/.bashrc`** in WSL exports `DISPLAY` pointing to the Windows host gateway
+   and unsets `WAYLAND_DISPLAY`.
 
 ## `Start-Turtlesim.ps1`
-Launches `turtlesim_node` (or `turtle_teleop_key` with `-Teleop`) inside `Ubuntu-24.04` WSL,
-then uses Win32 `SetForegroundWindow` to drag the WSLg-rendered window to the front.
+Launches a turtlesim node inside `Ubuntu-24.04` WSL and forces the window to the
+foreground (pinned topmost at 300, 150, 600×600). Auto-starts VcXsrv if needed.
 
-WSLg windows often appear hidden or behind other apps on Windows due to focus-stealing
-prevention — this script works around that.
-
-### Usage
 ```powershell
-# Terminal 1 — turtle window
+# Terminal A — turtle window
 .\scripts\Start-Turtlesim.ps1
 
-# Terminal 2 — keyboard control
+# Terminal B — keyboard control (focus this PowerShell window and use arrows)
 .\scripts\Start-Turtlesim.ps1 -Teleop
-# (then focus the teleop console window and use arrow keys)
 ```
 
-### Note
-The helper pins the window as **always-on-top** at (300, 150), 600×600.
-Click it once to focus, then to un-pin run from PowerShell:
+## `Stop-Turtlesim.ps1`
+Kill the WSL turtle processes (and VcXsrv unless `-KeepVcXsrv`).
+
 ```powershell
-Add-Type 'using System; using System.Runtime.InteropServices;
-public class P { [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr a, int x, int y, int cx, int cy, uint f); }'
-# find by title, then SetWindowPos(hwnd, HWND_NOTOPMOST=-2, 0,0,0,0, SWP_NOMOVE|SWP_NOSIZE = 0x13)
+.\scripts\Stop-Turtlesim.ps1
+.\scripts\Stop-Turtlesim.ps1 -KeepVcXsrv
 ```
-Or just close the WSL terminal.
 
-### One-time machine setup that's been applied
-`C:\Users\avezra\.wslconfig` has `gpuSupport=false` — WSLg's compositor was
-glitching in `[WARN:COPY MODE]` on this multi-GPU laptop (Intel Arc + NVIDIA +
-DisplayLink), rendering windows as black. Disabling GPU passthrough makes WSLg
-use llvmpipe (CPU) for its compositor. Fine for turtlesim & most Phase 1
-exercises. For **Phase 2 (Gazebo)** we'll need to re-enable it and select the
-NVIDIA adapter explicitly.
+## For Phase 2 (Gazebo)
+Gazebo Harmonic via VcXsrv with `-wgl` may work for basic sims. For
+GPU-accelerated 3D we may need to revisit (re-enable WSLg GPU, or run Gazebo
+headless and visualize via RViz/foxglove from Windows side).

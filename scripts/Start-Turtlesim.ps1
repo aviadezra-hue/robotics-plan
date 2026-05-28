@@ -10,6 +10,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Ensure VcXsrv X server is running (bypasses WSLg COPY MODE bug) ---
+$vcxsrvPath = "C:\Program Files\VcXsrv\vcxsrv.exe"
+if (-not (Test-Path $vcxsrvPath)) {
+  Write-Warning "VcXsrv not installed at $vcxsrvPath. Install with: winget install --id marha.VcXsrv"
+  Write-Warning "Continuing — will try WSLg (may render as black window)."
+} elseif (-not (Get-Process vcxsrv -ErrorAction SilentlyContinue)) {
+  Write-Host "Starting VcXsrv..." -ForegroundColor DarkCyan
+  Start-Process -FilePath $vcxsrvPath -ArgumentList "-multiwindow","-clipboard","-wgl","-ac","-noprimary"
+  Start-Sleep -Seconds 2
+}
+
 Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -24,6 +35,9 @@ public class WslWin {
   [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
   [DllImport("user32.dll")] public static extern bool AttachThreadInput(uint a, uint b, bool c);
   [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+  [DllImport("user32.dll")] public static extern bool InvalidateRect(IntPtr h, IntPtr rect, bool erase);
+  [DllImport("user32.dll")] public static extern bool RedrawWindow(IntPtr h, IntPtr rect, IntPtr region, uint flags);
   [DllImport("kernel32.dll")] public static extern uint GetCurrentThreadId();
   public delegate bool EnumWindowsProc(IntPtr h, IntPtr lp);
 }
@@ -45,9 +59,11 @@ function Find-WindowByTitle([string]$needle) {
 
 function Force-Foreground([IntPtr]$h) {
   [WslWin]::ShowWindow($h, 9) | Out-Null   # SW_RESTORE
-  # Pin as topmost so nothing can hide it; user can unpin via Win+Z or system menu
-  # HWND_TOPMOST = -1, SWP_SHOWWINDOW = 0x40
-  [WslWin]::SetWindowPos($h, [IntPtr]::new(-1), 300, 150, 600, 600, 0x40) | Out-Null
+  # Pin as topmost so nothing can hide it; HWND_TOPMOST = -1, SWP_SHOWWINDOW = 0x40
+  $topmost = [IntPtr]([Int64]-1)
+  [WslWin]::SetWindowPos($h, $topmost, 300, 150, 600, 600, 0x40) | Out-Null
+  # Force a repaint - some WSLg windows have stale framebuffer until invalidated
+  [WslWin]::RedrawWindow($h, [IntPtr]::Zero, [IntPtr]::Zero, 0x0085) | Out-Null
   $fg = [WslWin]::GetForegroundWindow()
   $procId = [uint32]0
   $fgThread = [WslWin]::GetWindowThreadProcessId($fg, [ref]$procId)

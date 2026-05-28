@@ -19,18 +19,21 @@ Installed and validated on this machine:
 
 **Manual visual confirmation still to do (do on internal display, not DisplayLink dock):**
 
-⚠️ WSLg windows often open hidden/behind other apps on this machine. Use the helper:
+The WSLg path is broken on this multi-GPU laptop (`[WARN:COPY MODE]` → black windows).
+We work around it with **VcXsrv** (a native Windows X server) — already installed and configured.
+
+Just run the helper:
 ```powershell
-# Terminal 1 (the turtle window — auto-foregrounded)
+# Terminal A — turtle window (auto-starts VcXsrv if needed, pins topmost)
 .\scripts\Start-Turtlesim.ps1
 
-# Terminal 2 (arrow-key control)
+# Terminal B — arrow-key control
 .\scripts\Start-Turtlesim.ps1 -Teleop
-```
-Then focus the **teleop** console window and press arrow keys — turtle should move.
 
-If you see `[WARN:COPY MODE]` in the turtle window title, WSLg is using software rendering
-(harmless for turtlesim; we'll fix GPU passthrough before Gazebo in Phase 2).
+# Cleanup
+.\scripts\Stop-Turtlesim.ps1
+```
+The turtle window should appear at (300, 150) on top of everything — blue square with a turtle in the center, with an "X" icon in the title bar (that's VcXsrv).
 
 ## To start **Phase 1** (ROS 2 fundamentals)
 Say:
