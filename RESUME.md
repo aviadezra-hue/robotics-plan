@@ -18,9 +18,19 @@ Installed and validated on this machine:
 - `ros2 doctor`: **All 5 checks passed**
 
 **Manual visual confirmation still to do (do on internal display, not DisplayLink dock):**
-Open two WSL terminals (Start Menu → Ubuntu 24.04):
-- Terminal 1: `ros2 run turtlesim turtlesim_node`
-- Terminal 2: `ros2 run turtlesim turtle_teleop_key` — focus this window, press arrow keys, turtle should move.
+
+⚠️ WSLg windows often open hidden/behind other apps on this machine. Use the helper:
+```powershell
+# Terminal 1 (the turtle window — auto-foregrounded)
+.\scripts\Start-Turtlesim.ps1
+
+# Terminal 2 (arrow-key control)
+.\scripts\Start-Turtlesim.ps1 -Teleop
+```
+Then focus the **teleop** console window and press arrow keys — turtle should move.
+
+If you see `[WARN:COPY MODE]` in the turtle window title, WSLg is using software rendering
+(harmless for turtlesim; we'll fix GPU passthrough before Gazebo in Phase 2).
 
 ## To start **Phase 1** (ROS 2 fundamentals)
 Say:
