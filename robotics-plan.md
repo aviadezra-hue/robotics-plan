@@ -392,6 +392,20 @@ ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/Twist \
   <figcaption>🐢 My Step 2.4 result — one <code>ros2 topic pub --once</code> command sent <code>linear.x=2.0</code> and <code>angular.z=1.5</code>, and the turtle drew a curve. You just programmed a robot from the command line.</figcaption>
 </figure>
 
+Now try the **continuous** variant — drop `--once` and add `-r 1` ("publish at 1 Hz forever"):
+
+```bash
+ros2 topic pub -r 1 /turtle1/cmd_vel geometry_msgs/Twist \
+  "{linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.5}}"
+```
+
+**Expected:** the same `linear+angular` velocity is re-applied every second, so the turtle traces a closed circle. Press `Ctrl+C` to stop.
+
+<figure class="screenshot">
+  <img src="images/phase1-cmd-vel-pub-r1.png" alt="TurtleSim window: yellow turtle that has drawn a complete white circle on the blue canvas, the result of publishing the same linear+angular velocity at 1Hz continuously" />
+  <figcaption>🔁 My result with <code>-r 1</code> — the same Twist message at 1 Hz draws a closed circle. Constant linear + constant angular velocity = circular motion (basic differential-drive kinematics).</figcaption>
+</figure>
+
 **Why it matters:** publishing to topics from the CLI is how you smoke-test a controller, manually drive a robot when teleop is broken, or fake a sensor input during bring-up.
 
 ---
