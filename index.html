@@ -959,7 +959,7 @@ ros2 param set /turtlesim background_g 0
 ros2 param set /turtlesim background_b 0
 ros2 service call /clear std_srvs/srv/Empty
 ```
-**Expected:** the canvas redraws red. (The `clear` service repaints with the current background colors.)
+**Expected:** the canvas redraws red **and any existing turtle trails disappear**. That's intentional — the `/clear` service both wipes the trail history *and* repaints the canvas with the current background color (params alone don't trigger a repaint; `/clear` is what applies them). If you want to keep your drawings, just don't call `/clear` after changing params — the new color will only take effect the next time someone clears.
 
 **Dump all params to a YAML file** (great for reproducible configs):
 ```bash
