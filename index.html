@@ -770,7 +770,12 @@ Click in this terminal to give it focus, then arrow keys to drive the turtle.
 ```bash
 rqt_graph
 ```
-A graphical window opens showing two boxes (`/turtlesim`, `/teleop_turtle`) connected by an arrow labeled `/turtle1/cmd_vel`. Click the refresh icon if it's empty. That arrow *is* your running system — boxes are nodes, arrows are topics.
+A graphical window opens showing two oval nodes (`/turtlesim`, `/teleop_turtle`) connected by an arrow labeled `/turtle1/cmd_vel` (plus a couple of `/turtle1/rotate_absolute/_action/...` arrows for teleop's rotate action). Click the refresh icon (top-left) if it's empty. Those arrows *are* your running system — boxes are nodes, arrows are topics/actions.
+
+<figure class="screenshot wide">
+  <img src="images/phase1-rqt-graph.png" alt="rqt_graph window showing two oval nodes, /teleop_turtle and /turtlesim, connected by arrows labeled /turtle1/cmd_vel and two /turtle1/rotate_absolute action topics" />
+  <figcaption>🔍 My Step 2.1 result — <code>rqt_graph</code> of the live turtlesim + teleop system. Two nodes, one main pub/sub arrow (<code>/turtle1/cmd_vel</code>), plus the rotate-absolute action wiring.</figcaption>
+</figure>
 
 **Why it matters:** every ROS 2 system you'll ever build looks like this. `rqt_graph` is the first tool you reach for when joining an unfamiliar project.
 
