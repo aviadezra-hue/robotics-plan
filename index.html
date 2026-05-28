@@ -1014,7 +1014,47 @@ ros2 bag play demo_bag
 
 So far you've opened one terminal per node. Launch files bring up many nodes from a single command — that's how every real robot starts up.
 
-Create a small launch file in your workspace:
+**What we're going to build & why:** we want two turtles where the second one mirrors the first. Driving `turtle1` with the keyboard makes `turtle2` follow the same trajectory. That demonstrates three core ROS 2 ideas at once: (1) a launch file starting multiple nodes, (2) **topic remapping** — rewiring node inputs/outputs at startup without touching their source code, and (3) composing existing nodes into new behavior.
+
+**The cast — what each node does:**
+
+| Node | Package / executable | What it does | Topics it uses |
+|---|---|---|---|
+| `sim` | `turtlesim` / `turtlesim_node` | The simulator itself — owns the canvas and every turtle on it (you can have many turtles in one sim) | per turtle: subscribes `/<name>/cmd_vel`, publishes `/<name>/pose` |
+| `mimic` | `turtlesim` / `mimic` | Tiny "pose → cmd_vel" translator that listens to one turtle's *pose* and outputs *velocity commands* that would move a second turtle the same way | subscribes `/input/pose`, publishes `/output/cmd_vel` |
+| `teleop_key` *(not in launch file — started manually)* | `turtlesim` / `turtle_teleop_key` | Reads your arrow keys and publishes them as velocity commands | publishes `/turtle1/cmd_vel` |
+
+The `mimic` node ships with turtlesim and is generic — it uses placeholder topic names `/input/pose` and `/output/cmd_vel`. You **remap** them at launch time to the real topics you care about. That's the whole trick.
+
+**Data flow once everything's running:**
+
+```
+[your keyboard]
+       │ arrow keys
+       ▼
+┌──────────────┐  /turtle1/cmd_vel   ┌────────────────────────┐
+│ teleop_key   │ ───────────────────▶│ sim (turtlesim_node)   │
+└──────────────┘                     │   • moves turtle1      │
+                                     │   • moves turtle2      │
+                                     └────┬───────────────────┘
+                                          │ /turtle1/pose
+                                          ▼
+                               (remapped from /input/pose)
+                                     ┌──────────┐
+                                     │  mimic   │
+                                     └────┬─────┘
+                                          │ /turtle2/cmd_vel
+                                  (remapped from /output/cmd_vel)
+                                          ▼
+                                  back into sim → moves turtle2
+```
+
+So `mimic` is the bridge: it converts whatever pose `turtle1` reaches into the velocity command needed to push `turtle2` along the same path. Without the remappings, mimic would just talk to non-existent `/input/pose` and `/output/cmd_vel` topics and do nothing.
+
+---
+
+Now create the launch file:
+
 ```bash
 mkdir -p ~/ros2_ws/src/launch_demo/launch
 cat > ~/ros2_ws/src/launch_demo/launch/turtle_demo.launch.py << 'EOF'
@@ -1041,24 +1081,37 @@ def generate_launch_description():
 EOF
 ```
 
+**What the launch file says, line by line:**
+- `Node(package='turtlesim', executable='turtlesim_node', name='sim')` — start one simulator. It comes up with `turtle1` already on the canvas.
+- `Node(package='turtlesim', executable='mimic', ...)` — start the mimic translator.
+- `remappings=[('/input/pose', '/turtle1/pose'), ('/output/cmd_vel', '/turtle2/cmd_vel')]` — at startup, tell `mimic` "wherever your code says `/input/pose`, actually subscribe to `/turtle1/pose`; wherever it says `/output/cmd_vel`, actually publish on `/turtle2/cmd_vel`." This is **remapping**, and it happens entirely from the outside — `mimic`'s source code never changes.
+
+---
+
 Kill everything from the previous steps (Ctrl-C in Terminals A, B, D). Then in **Terminal A**:
 ```bash
 ros2 launch ~/ros2_ws/src/launch_demo/launch/turtle_demo.launch.py
 ```
-**Expected:** turtlesim starts. (It still has only turtle1; you can spawn turtle2 below.)
+**Expected:** turtlesim starts with `turtle1` only (the launch file doesn't spawn `turtle2` for you — and `mimic` will sit there quietly waiting for `/turtle2/cmd_vel` to have a subscriber, which only happens once `turtle2` exists).
 
-In **Terminal B**, spawn turtle2 and start teleop:
+In **Terminal B**, spawn `turtle2` and start teleop:
 ```bash
 ros2 service call /spawn turtlesim/srv/Spawn "{x: 2.0, y: 2.0, theta: 0.0, name: 'turtle2'}"
 ros2 run turtlesim turtle_teleop_key
 ```
-**Expected:** as you drive `turtle1`, the **`mimic` node** copies its pose onto `turtle2` (note the topic remappings in the launch file). Two turtles, one set of arrow keys.
+**Expected:** as you drive `turtle1` with the arrow keys, `turtle2` traces the same path offset by its starting position. Two turtles, one set of arrow keys, no glue code written.
 
-**Why it matters:** launch files are how you wire complex multi-node systems together — Nav2, MoveIt, your own packages — declaratively, in Python, with arguments and conditions.
+**Verify the wiring with `rqt_graph`** (optional, in **Terminal C**):
+```bash
+rqt_graph
+```
+You should see `teleop_key → /turtle1/cmd_vel → sim → /turtle1/pose → mimic → /turtle2/cmd_vel → sim`. That arrow chain *is* the data flow diagram above, drawn from live introspection.
+
+**Why it matters:** this is the whole secret of ROS 2 composability. Every framework you'll touch later — Nav2, MoveIt, ros2_control — is just **dozens of generic nodes wired together by launch files using remappings, parameters, and conditions**. Once you understand `mimic` + 2 remappings, you understand a 500-line Nav2 launch file.
 
 <figure class="screenshot">
   <img src="images/phase1-launch.png" alt="TurtleSim window on a blue canvas: two turtles drawing identical zig-zag paths. The teleop'd turtle1 is at the bottom-left, the mimic-driven turtle2 is up and to the right, both having traced the same arrow-key sequence." />
-  <figcaption>🚀 My Step 2.8 result — one launch file started <code>turtlesim_node</code> + a second <code>turtlesim_node</code> + a <code>mimic</code> node. Driving <code>turtle1</code> with arrow keys made <code>turtle2</code> trace the exact same path. That's the magic of topic remapping in a launch file.</figcaption>
+  <figcaption>🚀 My Step 2.8 result — one launch file started <code>turtlesim_node</code> (hosting both turtles) + a <code>mimic</code> node. Driving <code>turtle1</code> with arrow keys made <code>turtle2</code> trace the exact same path via two topic remappings. Zero lines of glue code.</figcaption>
 </figure>
 
 Press `Ctrl+C` in each terminal when done.
