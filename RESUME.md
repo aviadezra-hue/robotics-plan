@@ -25,8 +25,6 @@ Installed and validated on this machine:
 1. Make sure VcXsrv is running (look for the **X** icon in your Windows tray; if missing, run it from Start Menu).
 2. In any Ubuntu terminal: `ros2 run <pkg> <node>`.
 
-The helper scripts in `scripts/` are kept for reference but no longer needed.
-
 ## To start **Phase 1** (ROS 2 fundamentals)
 Say:
 > "I finished Phase 0 of my robotics plan. Start Phase 1. Plan is at `C:\Users\avezra\repro-robotics-plan\robotics-plan.md`."
