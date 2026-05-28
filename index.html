@@ -322,6 +322,9 @@
     text-align: center;
     max-width: 560px;
   }
+  .markdown-body figure.screenshot.wide {
+    max-width: 100%;
+  }
   .markdown-body figure.screenshot img {
     max-width: 100%; height: auto;
     border-radius: 10px;
@@ -732,7 +735,7 @@ ros2 run demo_nodes_py listener
 
 **✅ If the listener sees the talker's messages, your ROS 2 workspace is fully working and you're ready for Step 2 (the official tutorials).**
 
-<figure class="screenshot">
+<figure class="screenshot wide">
   <img src="images/phase1-talker-listener.png" alt="Two Ubuntu terminal windows side by side: the left running ros2 run demo_nodes_cpp talker publishing 'Hello World: N' messages, the right running ros2 run demo_nodes_py listener echoing 'I heard: [Hello World: N]' with matching sequence numbers" />
   <figcaption>🎉 My own Step 1.8 result — talker (left) publishing <code>Hello World: 32→60</code>, listener (right) echoing the same sequence. Matching numbers = pub/sub transport working end-to-end across two independent processes.</figcaption>
 </figure>
