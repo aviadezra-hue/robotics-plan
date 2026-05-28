@@ -656,7 +656,11 @@ The walkthrough above covers what you need to move on to the mini-project. If yo
 
 ### 🛠️ Step 3 — Write your first ROS 2 package (the mini-project)
 
-> 🎯 **Mini-project deliverable:** A ROS 2 workspace with:
+<div id="resume-here" class="resume-marker">
+  <div class="resume-label"><strong>You are here</strong>Resume from Step 3 — your first ROS 2 package. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
+</div>
+
+> 🎯 **Mini-project deliverable:**A ROS 2 workspace with:
 > - A **custom message type** (`VelocityStats.msg`)
 > - A **publisher node** emitting fake odometry (`nav_msgs/Odometry`)
 > - A **subscriber node** that logs incoming poses and publishes computed velocity stats

@@ -311,6 +311,68 @@
   .markdown-body pre .copy-btn:focus { opacity: 1; }
   .markdown-body pre .copy-btn:hover { color: var(--accent, #4156c8); }
   .markdown-body pre .copy-btn.copied { color: #16a34a; opacity: 1; }
+
+  /* "You are here" resume marker (place a div with id="resume-here" in the markdown) */
+  .resume-marker {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    margin: 28px 0;
+    border: 2px dashed var(--accent);
+    background: var(--accent-soft);
+    border-radius: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    scroll-margin-top: 80px;
+    position: relative;
+  }
+  .resume-marker::before {
+    content: '📍';
+    font-size: 1.6em;
+    line-height: 1;
+  }
+  .resume-marker .resume-label {
+    flex: 1;
+    color: var(--fg);
+    font-size: 15px;
+  }
+  .resume-marker .resume-label strong {
+    color: var(--accent);
+    display: block;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 2px;
+  }
+
+  /* Floating "Resume here" pill — appears bottom-right whenever a marker exists */
+  #resume-fab {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    background: var(--hero-grad);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 20px;
+    font: 700 14px/1 'Inter', system-ui, sans-serif;
+    box-shadow: 0 8px 20px rgba(99,102,241,.45), 0 2px 6px rgba(0,0,0,.1);
+    cursor: pointer;
+    z-index: 999;
+    display: none;
+    transition: transform .15s ease, box-shadow .15s ease, opacity .2s ease;
+  }
+  #resume-fab.visible { display: inline-flex; align-items: center; gap: 8px; }
+  #resume-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(99,102,241,.55), 0 3px 8px rgba(0,0,0,.12);
+  }
+  #resume-fab:active { transform: translateY(0); }
+  #resume-fab.at-marker { opacity: 0; pointer-events: none; }
+  @media (max-width: 640px) {
+    #resume-fab { right: 14px; bottom: 14px; padding: 10px 16px; font-size: 13px; }
+  }
   .markdown-body table {
     display: table; width: 100%;
     border-collapse: separate; border-spacing: 0;
@@ -1141,7 +1203,11 @@ The walkthrough above covers what you need to move on to the mini-project. If yo
 
 ### 🛠️ Step 3 — Write your first ROS 2 package (the mini-project)
 
-> 🎯 **Mini-project deliverable:** A ROS 2 workspace with:
+<div id="resume-here" class="resume-marker">
+  <div class="resume-label"><strong>You are here</strong>Resume from Step 3 — your first ROS 2 package. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
+</div>
+
+> 🎯 **Mini-project deliverable:**A ROS 2 workspace with:
 > - A **custom message type** (`VelocityStats.msg`)
 > - A **publisher node** emitting fake odometry (`nav_msgs/Odometry`)
 > - A **subscriber node** that logs incoming poses and publishes computed velocity stats
@@ -2450,6 +2516,7 @@ ros2 launch my_panda_pkg vision_pick.launch.py
 </div>
 
 <button class="to-top" id="toTopBtn" aria-label="Back to top">↑</button>
+<button id="resume-fab" aria-label="Jump to where I left off">📍 Resume here</button>
 
 <script>
 (function () {
@@ -2654,8 +2721,33 @@ ros2 launch my_panda_pkg vision_pick.launch.py
     else toTop.classList.remove('visible');
   }, { passive: true });
 
+  // "Resume here" floating button — appears whenever the markdown contains a #resume-here marker
+  function wireResumeFab() {
+    const fab = document.getElementById('resume-fab');
+    const marker = document.getElementById('resume-here');
+    if (!fab) return;
+    if (!marker) { fab.classList.remove('visible'); return; }
+    fab.classList.add('visible');
+    fab.addEventListener('click', () => {
+      marker.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // brief highlight pulse
+      marker.style.transition = 'box-shadow .4s ease';
+      marker.style.boxShadow = '0 0 0 6px rgba(99,102,241,.18)';
+      setTimeout(() => { marker.style.boxShadow = ''; }, 1200);
+    });
+    // Hide FAB when the marker is on screen
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) fab.classList.add('at-marker');
+        else fab.classList.remove('at-marker');
+      });
+    }, { rootMargin: '-80px 0px -40% 0px' });
+    io.observe(marker);
+  }
+
   try {
     render(loadMarkdown());
+    wireResumeFab();
   } catch (e) {
     content.innerHTML = '<p style="color:#c00;padding:20px">Failed to render: ' + e.message + '</p>';
   }
