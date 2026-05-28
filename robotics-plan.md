@@ -1119,44 +1119,251 @@ ros2 run tf2_tools view_frames # generate a tf tree PDF
 
 ![Phase 3 illustration](https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1400&h=360&fit=crop&q=80 "Build maps, localize and navigate autonomously")
 
-> ⏰ **4–6 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Autonomous navigation in a known and unknown map.
+> ⏰ **4–6 weeks** &nbsp;·&nbsp; 🎯 **Goal:** Take a simulated robot from "no idea where it is" to **autonomously navigating a map it built itself**, using the production-grade ROS 2 navigation stack.
 
-**Two pillars:**
+**Two pillars you'll learn:**
 
-### 🗺️ 1. Nav2
+1. **SLAM** — *Simultaneous Localization And Mapping*. Drive around manually while the robot builds a 2D occupancy grid from its lidar scans.
+2. **Nav2** — the ROS 2 navigation stack. Given a saved map + a goal pose, it plans a global path, follows it with a local controller, avoids dynamic obstacles, and recovers when stuck.
 
-The ROS 2 navigation stack — 👉 https://navigation.ros.org/
+We'll use **TurtleBot 3** in Gazebo as the simulated robot — it ships with `nav2_bringup` and works out of the box on Jazzy. Everything you learn transfers directly to TurtleBot 4, custom robots, or your own hardware in Phase 5.
 
-- Run the Nav2 + TurtleBot 4 tutorial in simulation
-- Understand: costmaps, global/local planners, behavior trees, recovery behaviors
+> 🎯 **Phase 3 deliverable:** drive the robot to map an environment, save the map, restart with localization, send a goal in RViz2, and watch it autonomously plan + drive + avoid obstacles + announce "Goal succeeded".
 
-### 📡 2. SLAM — Mapping + Localization
+---
 
-- 🗺️ `slam_toolbox` for 2D lidar SLAM
-- 📍 `nav2_amcl` for localization in a known map
-- 🔮 Optional next step: RTAB-Map for visual/3D SLAM
+### 🛠️ Step 1 — Install Nav2 + the simulated robot
 
-> 🎯 **Mini-project deliverable:** In simulation, drive the robot to map an environment, save the map, restart, localize, and send navigation goals from RViz2 — fully autonomous.
+Open a new Ubuntu terminal (your `~/.bashrc` from Phase 1 sources ROS 2 + your workspace overlay automatically).
+
+```bash
+sudo apt update
+sudo apt install -y \
+  ros-jazzy-navigation2 \
+  ros-jazzy-nav2-bringup \
+  ros-jazzy-turtlebot3* \
+  ros-jazzy-slam-toolbox
+```
+
+**Expected:** apt pulls in a few hundred MB (Nav2 is a big stack — costmap layers, planners, controllers, behavior trees, the lifecycle manager, etc.). Ends with `0 upgraded, NN newly installed`. Takes 1–5 min depending on bandwidth.
+
+**Why it matters:** these four meta-packages give you everything: `navigation2` is the runtime, `nav2_bringup` has ready-to-run launch files + a sample world, `turtlebot3_*` is the simulated robot model + Gazebo plugins, `slam_toolbox` is the SLAM library that builds maps from lidar.
+
+Add two persistent environment variables (TurtleBot 3 needs these — pick `waffle` since it has a 360° lidar):
+
+```bash
+echo 'export TURTLEBOT3_MODEL=waffle' >> ~/.bashrc
+echo 'export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:/opt/ros/jazzy/share/turtlebot3_gazebo/models' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Expected:** no output. Verify with `echo $TURTLEBOT3_MODEL` → `waffle`.
+
+**Why it matters:** TurtleBot 3 ships in three flavors (burger, waffle, waffle_pi). Without `TURTLEBOT3_MODEL` set, the launch files will fail with "model not specified". The `GAZEBO_MODEL_PATH` lets Gazebo find the mesh files.
+
+---
+
+### 🚀 Step 2 — Launch the simulated world & meet the robot
+
+In **Terminal A**:
+
+```bash
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False
+```
+
+**Expected:** after ~20–40 seconds (Gazebo cold start), three windows open:
+1. **Gazebo** — a small apartment-like world with the TurtleBot 3 sitting near the origin.
+2. **RViz2** — the visualization tool showing the robot's coordinate frames, sensor data, and (soon) the costmaps.
+3. A flurry of terminal logs ending with `Creating bond timer` from `bt_navigator` and `behavior_server` — that's Nav2 reporting it's healthy.
+
+**What just started, conceptually:** *one* launch file brought up ~15 nodes: the Gazebo sim, the TurtleBot 3 robot description, all the Nav2 servers (planner, controller, behavior server, BT navigator, lifecycle manager, AMCL, map server, costmap layers), and RViz2 pre-configured with the right displays. **This is why launch files matter** — Phase 1's mimic demo was the same pattern, just 2 nodes instead of 15.
+
+In **Terminal B**, peek at what's running:
+
+```bash
+ros2 node list | wc -l
+ros2 topic list | grep -E '^/(scan|odom|cmd_vel|tf|map)$'
+```
+
+**Expected:** ~15+ nodes; the four canonical robot topics all present (`/scan` = lidar, `/odom` = odometry, `/cmd_vel` = command velocity, `/tf` = frame transforms, `/map` = the map once SLAM/AMCL is up).
+
+**Why it matters:** every ROS 2 mobile robot — sim or real — exposes this same set of topics. Once you can navigate this one, you can debug any of them.
+
+---
+
+### 🗺️ Step 3 — Build a map with SLAM
+
+The launch you started in Step 2 uses a *pre-existing* map. To build your own, stop it (`Ctrl+C` in Terminal A) and restart with SLAM enabled:
+
+```bash
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False slam:=True
+```
+
+**Expected:** same windows, but now `slam_toolbox` is running and RViz2 shows an empty grey grid — that's the map being built live. The robot's lidar (red dots / arc) is visible.
+
+In **Terminal B**, start teleop so you can drive:
+
+```bash
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+**Expected:** instructions printed (`w`/`x` = forward/back, `a`/`d` = turn, `s` = stop). Each keypress nudges the robot.
+
+**Drive slowly** around the apartment — go down hallways, into rooms, around obstacles. Watch the RViz2 map fill in: black = walls (lidar hits), grey = unknown, white = free space. **The robot needs to physically "see" every wall with its lidar to map it.** Loops are good — closing a loop tells SLAM to refine the whole map.
+
+**Verify the map is being built:**
+
+```bash
+ros2 topic hz /map           # should publish at ~1–2 Hz
+ros2 topic echo /map --once  # huge dump — but width/height grow as you explore
+```
+
+**Why it matters:** SLAM is doing two jobs at once — figuring out where the robot *is* (localization) using lidar + odometry, and recording what it *sees* (mapping). The "simultaneous" part is the hard one: you need to know where you are to draw the map, but you need the map to know where you are. `slam_toolbox` solves it with iterative scan matching + pose graph optimization.
+
+---
+
+### 💾 Step 4 — Save the map
+
+Once the map looks complete (most walls drawn, white free-space everywhere you've driven), save it from **Terminal B** (kill teleop first with `Ctrl+C`):
+
+```bash
+mkdir -p ~/maps
+ros2 run nav2_map_server map_saver_cli -f ~/maps/apartment
+```
+
+**Expected:**
+```
+[INFO] Map saved successfully
+```
+And two new files in `~/maps/`:
+
+```bash
+ls ~/maps/
+# apartment.pgm  apartment.yaml
+```
+
+- `apartment.pgm` — the actual occupancy grid as a greyscale image (open it with any image viewer to verify).
+- `apartment.yaml` — metadata: resolution (m/pixel), origin (world coordinates of the bottom-left corner), thresholds for free/occupied.
+
+**Why it matters:** a saved map is just a PGM + YAML. You can hand-edit the PGM in GIMP to remove transient obstacles (a chair that was there during mapping but isn't permanent), check it into git, or load it on a totally different robot. This portability is one of ROS 2's quietly powerful features.
+
+Now stop the SLAM launch (`Ctrl+C` in Terminal A).
+
+---
+
+### 📍 Step 5 — Relaunch in localization mode (AMCL)
+
+```bash
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False \
+  map:=$HOME/maps/apartment.yaml
+```
+
+**Expected:** Gazebo + RViz2 come back up. RViz2 shows your saved map *and* a **green cloud of arrows** scattered around the robot — that's the **AMCL particle filter**: each arrow is a hypothesis about where the robot might be. Spread = uncertainty.
+
+**Give the robot its initial pose** so AMCL converges:
+1. In RViz2, click the **`2D Pose Estimate`** button in the top toolbar.
+2. Click on the map where the robot actually is (you can see its true position in Gazebo).
+3. Drag in the direction it's facing.
+4. Release.
+
+**Expected:** the green particle cloud collapses to a tight clump around the robot. That's AMCL saying "ok, I know where I am now."
+
+**Why it matters:** the difference between SLAM and AMCL is what they assume. SLAM assumes nothing — "I don't know where I am and I don't have a map, figure both out." AMCL assumes you have a map and just need to figure out your pose within it. On a real robot you'd map once (Step 3–4), then use AMCL forever after.
+
+---
+
+### 🎯 Step 6 — Send a navigation goal from RViz2
+
+This is the payoff:
+
+1. In RViz2, click the **`Nav2 Goal`** button in the top toolbar.
+2. Click somewhere on the map you want the robot to go.
+3. Drag to set its final orientation.
+4. Release.
+
+**Expected:** within ~1 second you should see:
+- A **coloured path line** appear from the robot to the goal (the global plan).
+- Tinted overlays on the map (cyan/pink/purple) — that's the **costmap inflation layer** marking the "do not drive here" zones around obstacles.
+- The robot starts physically driving in Gazebo, following the path.
+- When it arrives, the BT navigator logs `Goal succeeded` in Terminal A.
+
+**Verify the planning chain in Terminal B:**
+
+```bash
+ros2 topic echo /plan --once | head -20            # the global plan poses
+ros2 topic hz /local_costmap/costmap               # local costmap updates ~5 Hz
+ros2 topic echo /behavior_tree_log --once | head   # see which BT nodes fired
+```
+
+**Why it matters:** that single click triggered the whole Nav2 stack — global planner (`NavfnPlanner` by default, computes the path), local controller (`DWB`, follows it while avoiding moving obstacles), recovery behaviors (spin, back up, clear costmap), behavior tree orchestrator. Every commercial autonomous robot you've seen (warehouse AMRs, restaurant delivery bots) runs this exact stack or a fork of it.
+
+---
+
+### 🤖 Step 7 — Send a goal from the CLI (no RViz needed)
+
+RViz is great for humans but in production goals come from code. Nav2 exposes a ROS 2 **action**: `/navigate_to_pose`.
+
+```bash
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
+  "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 1.5, y: 0.5, z: 0.0}, orientation: {w: 1.0}}}}" \
+  --feedback
+```
+
+**Expected:** the robot starts driving toward (x=1.5, y=0.5). The terminal streams live `feedback:` blocks showing `distance_remaining`, `current_pose`, `navigation_time` until it ends with `result: {result: SUCCEEDED}`.
+
+**Why it matters:** **this is how you write autonomous behavior.** Replace that one-shot CLI call with a Python node that picks goals from a queue (a delivery list, a patrol route, an exploration policy), and you have a real autonomous robot. The whole Nav2 stack is just "give me a goal, I'll get you there."
+
+---
+
+### 🛠️ Step 8 — Inspect & tune
+
+While Nav2 is running, change parameters live without restarting (the lesson from Phase 1 Step 2.6, scaled up):
+
+```bash
+# What controllers/planners are loaded?
+ros2 param get /controller_server FollowPath.plugin
+ros2 param get /planner_server GridBased.plugin
+
+# Slow the robot down by 50% — try a goal again, it'll feel sluggish
+ros2 param set /controller_server FollowPath.max_vel_x 0.13
+
+# Watch the costmap inflation radius live (try 0.3, then 1.0 — bigger = more cautious)
+ros2 param set /global_costmap/global_costmap inflation_layer.inflation_radius 1.0
+
+# What's the BT navigator actually doing?
+ros2 topic echo /behavior_tree_log
+```
+
+**Expected:** each `param set` returns `successful: true` and the next navigation goal reflects the change. The behavior tree log shows nodes like `RateController`, `ComputePathToPose`, `FollowPath`, `RecoveryNode` flipping between `IDLE` / `RUNNING` / `SUCCESS` in real time.
+
+**Why it matters:** real-world Nav2 tuning is 80% of deployment work. Wrong inflation → robot scrapes walls or refuses to enter doorways. Wrong `max_vel_x` → either crawls or crashes. Now you know how to twiddle them without recompiling anything.
+
+---
+
+### 🧠 You now know
+
+By the end of Phase 3 you can: install + launch the full Nav2 stack, build a map with SLAM, save and reload it, localize with AMCL, send goals from both RViz and the CLI/code, inspect the behavior tree, and live-tune costmap + controller parameters. **That's the navigation skillset of a hire-able ROS 2 robotics engineer.**
 
 ### ✅ Validation Checkpoint
 
-Map → save → re-localize → autonomous goal:
+Reproduce this end-to-end sequence three times in a row, with no errors:
+
 ```bash
-# 1) Map with SLAM
-ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
-  slam:=true rviz:=true
-# Teleop-drive around until the map looks complete, then:
+# 1) Map with SLAM (drive around in Gazebo with teleop until map looks complete)
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False slam:=True
+# in another terminal:
+ros2 run turtlebot3_teleop teleop_keyboard
 ros2 run nav2_map_server map_saver_cli -f ~/maps/apartment
 
-# 2) Restart in localization + Nav2 mode
-ros2 launch turtlebot4_ignition_bringup turtlebot4_ignition.launch.py \
-  localization:=true nav2:=true rviz:=true \
+# 2) Restart in localization + Nav2 mode, set initial pose in RViz2
+ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False \
   map:=$HOME/maps/apartment.yaml
 
-# 3) In RViz2: click "Nav2 Goal", click a point on the map
-ros2 topic echo /behavior_tree_log --once   # see the BT firing
+# 3) Send three different goals from RViz2 (click "Nav2 Goal")
+ros2 topic echo /behavior_tree_log --once   # confirm BT fired
 ```
-✅ Robot autonomously plans + drives + avoids obstacles + announces "Goal succeeded" at the target. Reproducible 3 times in a row = **Phase 3 done**.
+
+✅ Robot autonomously plans + drives + avoids obstacles + announces "Goal succeeded" at the target. Reproducible three times in a row = **Phase 3 done**.
 
 <figure class="screenshot">
   <img src="images/nav2-result.png" alt="RViz2 showing a Nav2 demo: an occupancy-grid map with cyan/pink costmap inflation layers, AMCL particle cloud around the robot, and a planned path from start to goal" />
