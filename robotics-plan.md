@@ -274,7 +274,7 @@ ros2 run demo_nodes_py listener
 ```
 **Expected:** matching lines: `[INFO] [listener]: I heard: [Hello World: 7]`, with the same numbers showing up.
 
-**✅ If the listener sees the talker's messages, your ROS 2 workspace is fully working and you're ready for Step 2 (the official tutorials).**
+**✅ If the listener sees the talker's messages, your ROS 2 workspace is fully working and you're ready for Step 2.**
 
 <figure class="screenshot wide">
   <img src="images/phase1-talker-listener.png" alt="Two Ubuntu terminal windows side by side: the left running ros2 run demo_nodes_cpp talker publishing 'Hello World: N' messages, the right running ros2 run demo_nodes_py listener echoing 'I heard: [Hello World: N]' with matching sequence numbers" />
@@ -285,18 +285,264 @@ To stop: in each terminal, press `Ctrl+C`.
 
 ---
 
-### 📚 Step 2 — Work through the official ROS 2 tutorials
+### 📚 Step 2 — Explore the ROS 2 CLI with turtlesim
 
-📖 **Primary resource:** Official ROS 2 tutorials — work through *every* beginner + intermediate tutorial:
-👉 https://docs.ros.org/en/jazzy/Tutorials.html
+ROS 2's runtime is built around four core concepts: **nodes** (processes), **topics** (pub/sub streams), **services** (request/response calls), and **parameters** (live config). Plus two glue layers: **launch** (start many nodes at once) and **bag** (record/replay). The fastest way to feel them is to introspect a live system — and `turtlesim` is the perfect playground (tiny but exposes every concept).
 
-**Supplement with one resource (pick one):**
+You'll need **3 Ubuntu terminals open** for most of this step. I'll call them **Terminal A**, **B**, **C** (open a fourth, D, later).
 
-| Type | Resource | Notes |
+---
+
+**2.1 Launch turtlesim and visualize the running graph**
+
+**Terminal A** — start turtlesim:
+```bash
+ros2 run turtlesim turtlesim_node
+```
+The blue turtle window pops up (rendered via VcXsrv).
+
+**Terminal B** — start the keyboard teleop:
+```bash
+ros2 run turtlesim turtle_teleop_key
+```
+Click in this terminal to give it focus, then arrow keys to drive the turtle.
+
+**Terminal C** — view the live system graph:
+```bash
+rqt_graph
+```
+A graphical window opens showing two boxes (`/turtlesim`, `/teleop_turtle`) connected by an arrow labeled `/turtle1/cmd_vel`. Click the refresh icon if it's empty. That arrow *is* your running system — boxes are nodes, arrows are topics.
+
+**Why it matters:** every ROS 2 system you'll ever build looks like this. `rqt_graph` is the first tool you reach for when joining an unfamiliar project.
+
+Close the rqt_graph window when done (keep A and B running).
+
+---
+
+**2.2 List and inspect nodes**
+
+In **Terminal C**:
+```bash
+ros2 node list
+```
+**Expected:**
+```
+/teleop_turtle
+/turtlesim
+```
+
+```bash
+ros2 node info /turtlesim
+```
+**Expected:** a structured dump listing every publisher, subscriber, service, and action the node exposes — `/turtle1/cmd_vel` (subscriber), `/turtle1/pose` (publisher), `/spawn` (service server), etc.
+
+**Why it matters:** when you join a project with 30 unfamiliar nodes, this is how you reverse-engineer it. Same command, every time.
+
+---
+
+**2.3 Inspect and drive topics from the CLI**
+
+```bash
+ros2 topic list
+```
+**Expected:** `/turtle1/cmd_vel`, `/turtle1/pose`, `/turtle1/color_sensor`, `/parameter_events`, `/rosout`.
+
+```bash
+ros2 topic echo /turtle1/pose
+```
+Streams the turtle's `x`, `y`, `theta` continuously. Drive the turtle in Terminal B with the arrow keys and watch the values change live. Press `Ctrl+C` when done watching.
+
+```bash
+ros2 topic hz /turtle1/pose
+```
+Reports the publish rate. **Expected:** `average rate: 62.5`. Ctrl-C.
+
+Now drive the turtle yourself by publishing to `cmd_vel`:
+```bash
+ros2 topic pub --once /turtle1/cmd_vel geometry_msgs/Twist "{linear: {x: 2.0, y: 0.0, z: 0.0}, angular: {x: 0.0, y: 0.0, z: 1.5}}"
+```
+**Expected:** the turtle curves forward-and-left for an instant. `--once` sends one message. Drop `--once` and add `-r 1` for "publish at 1 Hz continuously" — the turtle will keep curving.
+
+**Why it matters:** `topic echo`, `hz`, and `pub` are 80% of how you debug a real robot from the terminal — confirm a sensor is publishing, check its rate, inject fake commands.
+
+---
+
+**2.4 Call services (request/response)**
+
+Topics are streams; **services** are one-off RPC calls.
+
+```bash
+ros2 service list
+```
+**Expected:** `/clear`, `/reset`, `/turtle1/set_pen`, `/turtle1/teleport_absolute`, `/spawn`, `/kill`, plus parameter-related services.
+
+```bash
+ros2 service type /turtle1/teleport_absolute
+```
+**Expected:** `turtlesim/srv/TeleportAbsolute` — every service has a typed request/response definition.
+
+**Teleport the turtle** to the bottom-left corner:
+```bash
+ros2 service call /turtle1/teleport_absolute turtlesim/srv/TeleportAbsolute "{x: 1.0, y: 1.0, theta: 0.0}"
+```
+
+**Change the pen color to red**, then draw with it from Terminal B:
+```bash
+ros2 service call /turtle1/set_pen turtlesim/srv/SetPen "{r: 255, g: 0, b: 0, width: 3, 'off': 0}"
+```
+*(Note: `off` is quoted because it's a YAML reserved word.)*
+
+**Spawn a second turtle:**
+```bash
+ros2 service call /spawn turtlesim/srv/Spawn "{x: 5.5, y: 5.5, theta: 0.0, name: 'turtle2'}"
+```
+**Expected:** response `name: turtle2`, and a second turtle appears in the middle of the canvas.
+
+**Why it matters:** topics for streams (sensor data, odometry, commands), services for events (calibrate, save map, switch mode). Wrong choice = bad architecture.
+
+---
+
+**2.5 Read and write parameters live**
+
+Parameters are runtime config that a node exposes. They can be set at launch *or* changed live.
+
+```bash
+ros2 param list
+```
+Lists every node's parameters. Under `/turtlesim` you'll see `background_b`, `background_g`, `background_r`, `holonomic`, `use_sim_time`, plus parameter-descriptor entries.
+
+```bash
+ros2 param get /turtlesim background_b
+```
+**Expected:** `Integer value is: 255` (blue, hence the blue canvas).
+
+**Change the canvas color live** to red:
+```bash
+ros2 param set /turtlesim background_r 255
+ros2 param set /turtlesim background_g 0
+ros2 param set /turtlesim background_b 0
+ros2 service call /clear std_srvs/srv/Empty
+```
+**Expected:** the canvas redraws red. (The `clear` service repaints with the current background colors.)
+
+**Dump all params to a YAML file** (great for reproducible configs):
+```bash
+mkdir -p ~/ros2_ws/configs
+ros2 param dump /turtlesim > ~/ros2_ws/configs/turtlesim_params.yaml
+cat ~/ros2_ws/configs/turtlesim_params.yaml
+```
+Later you can restore them with `ros2 param load /turtlesim ~/ros2_ws/configs/turtlesim_params.yaml`.
+
+**Why it matters:** parameters let you tune a node without recompiling. Real robots have hundreds (PID gains, frame names, sensor calibrations).
+
+---
+
+**2.6 Record and replay with `ros2 bag`**
+
+Bag files are the killer feature for debugging — capture all messages on the wire, replay later on your laptop without the robot.
+
+**Terminal D** (open a new Ubuntu window):
+```bash
+mkdir -p ~/ros2_ws/bags && cd ~/ros2_ws/bags
+ros2 bag record /turtle1/cmd_vel -o demo_bag
+```
+Now drive the turtle around for ~10 seconds in Terminal B (the teleop). Press `Ctrl+C` in Terminal D to stop recording.
+
+Inspect what you captured:
+```bash
+ros2 bag info demo_bag
+```
+**Expected:** total duration ~10 s, message count > 0, type `geometry_msgs/msg/Twist`.
+
+**Reset the canvas** so you can see the replay clearly:
+```bash
+ros2 service call /reset std_srvs/srv/Empty
+```
+
+**Replay the bag** — the turtle re-traces your original drive:
+```bash
+ros2 bag play demo_bag
+```
+**Expected:** the turtle moves on its own, following the path you originally drove. (Because you recorded the *input* `/turtle1/cmd_vel`, replaying it drives the turtle the same way.)
+
+**Why it matters:** every robotics team uses bags to debug field issues — driver records once on the robot, you replay on your laptop and re-run analysis as many times as you want.
+
+---
+
+**2.7 Compose multiple nodes with `ros2 launch`**
+
+So far you've opened one terminal per node. Launch files bring up many nodes from a single command — that's how every real robot starts up.
+
+Create a small launch file in your workspace:
+```bash
+mkdir -p ~/ros2_ws/src/launch_demo/launch
+cat > ~/ros2_ws/src/launch_demo/launch/turtle_demo.launch.py << 'EOF'
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='turtlesim',
+            executable='turtlesim_node',
+            name='sim',
+        ),
+        Node(
+            package='turtlesim',
+            executable='mimic',
+            name='mimic',
+            remappings=[
+                ('/input/pose', '/turtle1/pose'),
+                ('/output/cmd_vel', '/turtle2/cmd_vel'),
+            ],
+        ),
+    ])
+EOF
+```
+
+Kill everything from the previous steps (Ctrl-C in Terminals A, B, D). Then in **Terminal A**:
+```bash
+ros2 launch ~/ros2_ws/src/launch_demo/launch/turtle_demo.launch.py
+```
+**Expected:** turtlesim starts. (It still has only turtle1; you can spawn turtle2 below.)
+
+In **Terminal B**, spawn turtle2 and start teleop:
+```bash
+ros2 service call /spawn turtlesim/srv/Spawn "{x: 2.0, y: 2.0, theta: 0.0, name: 'turtle2'}"
+ros2 run turtlesim turtle_teleop_key
+```
+**Expected:** as you drive `turtle1`, the **`mimic` node** copies its pose onto `turtle2` (note the topic remappings in the launch file). Two turtles, one set of arrow keys.
+
+**Why it matters:** launch files are how you wire complex multi-node systems together — Nav2, MoveIt, your own packages — declaratively, in Python, with arguments and conditions.
+
+Press `Ctrl+C` in each terminal when done.
+
+---
+
+### 🧠 You now know
+
+By the end of Step 2 you should be comfortable with: `ros2 run`, `ros2 node list/info`, `ros2 topic list/info/echo/hz/pub`, `ros2 service list/type/call`, `ros2 param list/get/set/dump/load`, `ros2 bag record/info/play`, `ros2 launch`, and `rqt_graph`. That's the entire daily-driver CLI of a ROS 2 developer.
+
+**Up next:** Step 3 wires this knowledge into your *own* Python package — the `odom_demo` mini-project that's the official Phase 1 deliverable.
+
+---
+
+### 📖 Further reading *(optional reference, not required)*
+
+The walkthrough above covers what you need to move on to the mini-project. If you want deeper background on any specific concept later, these are excellent reference resources — **read them on demand**, don't try to consume them up-front.
+
+| Type | Resource | When to dip in |
 |:-:|---|---|
-| 📘 | *A Concise Introduction to Robot Programming with ROS 2* — Fairchild & Harman | Best for experienced devs |
-| 🎥 | [Articulated Robotics](https://articulatedrobotics.xyz/) YouTube (Josh Newans) | Outstanding ROS 2 + Gazebo content, free |
-| 🎓 | [The Construct's free ROS 2 Basics](https://www.theconstruct.ai/) | Browser-based, no install |
+| 📑 | [Official ROS 2 Jazzy tutorials](https://docs.ros.org/en/jazzy/Tutorials.html) | Reference for edge cases and the exact API spec |
+| 📘 | *A Concise Introduction to Robot Programming with ROS 2* — Fairchild & Harman | When you want a structured, dev-focused book |
+| 🎥 | [Articulated Robotics](https://articulatedrobotics.xyz/) YouTube (Josh Newans) | When you want a visual walkthrough of URDF / Gazebo / Nav2 |
+| 🎓 | [The Construct's free ROS 2 Basics](https://www.theconstruct.ai/) | If you want browser-based exercises with no local install |
+
+---
+
+### 🛠️ Step 3 — Write your first ROS 2 package (the mini-project)
+
+🚧 *Coming soon — say "expand Step 3" and I'll inline a full walkthrough: `ros2 pkg create` → publisher node → subscriber node → custom message type → launch file → build & test, ending at the Validation Checkpoint below.*
 
 > 🎯 **Mini-project deliverable:** Write a ROS 2 package (Python) with:
 > - A publisher node emitting fake odometry
