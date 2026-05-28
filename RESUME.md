@@ -8,32 +8,24 @@ Last published commit: `82ad2a3`
 Say:
 > "Resume my robotics plan. Repo is `C:\Users\avezra\repro-robotics-plan`, published at `https://aviadezra-hue.github.io/robotics-plan/`. Read `RESUME.md` then `robotics-plan.md`."
 
-## ✅ Phase 0 — COMPLETE
+## ✅ Phase 0 — COMPLETE & VALIDATED
 Installed and validated on this machine:
 - WSL 2.7.3 + Ubuntu 24.04.4 LTS (default user: `aviad`, passwordless sudo, systemd on)
 - NVIDIA driver 595.71 / CUDA 13.2 — already CUDA-on-WSL ready, no install needed
 - ROS 2 Jazzy desktop-full + ros-gz (Gazebo Harmonic Sim 8.11.0) — 340 packages
-- `~/.bashrc` sources `/opt/ros/jazzy/setup.bash`; `ROS_DOMAIN_ID=0`, `RMW_IMPLEMENTATION=rmw_fastrtps_cpp`
+- `~/.bashrc` sources `/opt/ros/jazzy/setup.bash`; sets `DISPLAY=$(host-ip):0`; unsets `WAYLAND_DISPLAY`
+- **VcXsrv** as the X server (WSLg is broken on this multi-GPU laptop — `[WARN:COPY MODE]` → black windows)
+  - auto-starts at Windows login via shortcut in `%APPDATA%\...\Startup\VcXsrv.lnk`
+  - run with: `-multiwindow -clipboard -wgl -ac -noprimary`
 - VS Code WSL extension `ms-vscode-remote.remote-wsl` v0.104.3
 - `ros2 doctor`: **All 5 checks passed**
+- ✅ **Turtlesim visually validated** — `ros2 run turtlesim turtlesim_node` + `turtle_teleop_key`, arrow keys move the turtle
 
-**Manual visual confirmation still to do (do on internal display, not DisplayLink dock):**
+### To run anything GUI in WSL
+1. Make sure VcXsrv is running (look for the **X** icon in your Windows tray; if missing, run it from Start Menu).
+2. In any Ubuntu terminal: `ros2 run <pkg> <node>`.
 
-The WSLg path is broken on this multi-GPU laptop (`[WARN:COPY MODE]` → black windows).
-We work around it with **VcXsrv** (a native Windows X server) — already installed and configured.
-
-Just run the helper:
-```powershell
-# Terminal A — turtle window (auto-starts VcXsrv if needed, pins topmost)
-.\scripts\Start-Turtlesim.ps1
-
-# Terminal B — arrow-key control
-.\scripts\Start-Turtlesim.ps1 -Teleop
-
-# Cleanup
-.\scripts\Stop-Turtlesim.ps1
-```
-The turtle window should appear at (300, 150) on top of everything — blue square with a turtle in the center, with an "X" icon in the title bar (that's VcXsrv).
+The helper scripts in `scripts/` are kept for reference but no longer needed.
 
 ## To start **Phase 1** (ROS 2 fundamentals)
 Say:
