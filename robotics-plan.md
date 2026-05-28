@@ -250,10 +250,11 @@ The first time you run `code` from WSL, it installs the VS Code Server inside Ub
 
 Now install the extensions you'll need. Click the **Extensions** icon in the left sidebar (the four-squares icon, or `Ctrl+Shift+X`) and search for and install each of these. **Important:** each one must say *"Install in WSL: Ubuntu-24.04"* on the green button (not just "Install"):
 
-- **ROS** by Microsoft — syntax + launch support
+- **Robotics Developer Environment** by Ranch Hand Robotics — the extension pack that replaces the now-deprecated Microsoft `ROS` extension. It bundles the Robot Developer Extension for ROS 2 + URDF/Xacro editor + related tooling. *(If VS Code suggested it as a replacement, accept the suggestion — it's the right one.)*
 - **Python** by Microsoft — IntelliSense + debugger
-- **XML** by Red Hat — for `package.xml` and URDF files
 - **CMake Tools** by Microsoft — for C++ packages later
+
+> ⚠️ **Don't install the old `ROS` extension by Microsoft (`ms-iot.vscode-ros`)** — it was archived in September 2025 when the Azure Edge Robotics team was disbanded. The same lead maintainer now ships the modern version through Ranch Hand Robotics, with active ROS 2 + AI/Copilot integration features.
 
 ---
 
