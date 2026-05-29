@@ -871,6 +871,8 @@ ros2 pkg create --build-type ament_python ~/ros2_ws/src/odom_demo \
 
 **3.4 Write the publisher node (fake odometry)**
 
+> 🧠 **Heads up — the double-`odom_demo/` folder is intentional.** `ament_python` packages have a nested structure: the **outer** `~/ros2_ws/src/odom_demo/` is the ROS 2 package (holds `package.xml`, `setup.py`); the **inner** `~/ros2_ws/src/odom_demo/odom_demo/` is the actual Python module (holds `__init__.py` and your node `.py` files, so `from odom_demo.odom_publisher import …` works). Every Python ROS 2 package looks like this — it trips everyone up the first time. Verify with `ls ~/ros2_ws/src/odom_demo/odom_demo/` — you should see `__init__.py`.
+
 ```bash
 cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_publisher.py << 'EOF'
 import math
