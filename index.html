@@ -429,6 +429,16 @@
   .markdown-body table tr { background: var(--card-bg); }
   .markdown-body table tr:nth-child(2n) { background: var(--bg-soft); }
   .markdown-body img { border-radius: 6px; }
+  /* Plain markdown images (not in a figure, not a phase illustration) — cap at natural size */
+  .markdown-body p > img,
+  .markdown-body blockquote img {
+    display: block;
+    max-width: min(100%, 460px);
+    height: auto;
+    margin: 12px auto;
+    border: 1px solid var(--border);
+    box-shadow: 0 4px 14px -6px rgba(0,0,0,.25);
+  }
   .markdown-body img.phase-illustration {
     width: 100%;
     height: 220px;
