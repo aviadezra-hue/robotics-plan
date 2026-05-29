@@ -1670,7 +1670,7 @@ ros2 node info /odom_pub                 # lists publisher with type nav_msgs/ms
 ros2 param get /odom_pub radius          # → 2.0
 ```
 
-**Try overriding a parameter at launch time:**
+**In terminal 3** (or: Ctrl+C in terminal 1 first and re-launch there) — **override a parameter at launch time**:
 
 ```bash
 ros2 launch odom_demo demo.launch.py publish_rate_hz:=50.0 radius:=5.0
