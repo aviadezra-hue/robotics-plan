@@ -1099,10 +1099,6 @@ source install/setup.bash
 
 **3.8 Run it & validate**
 
-<div id="resume-here" class="resume-marker">
-  <div class="resume-label"><strong>You are here</strong>Resume from Step 3.8 — both packages built, ready to launch and validate. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
-</div>
-
 In **terminal 1** — launch both nodes:
 
 ```bash
@@ -1299,6 +1295,10 @@ echo $TURTLEBOT3_MODEL
 ---
 
 ### 🛠️ Step 3 — Launch Gazebo + spawn the robot (empty world)
+
+<div id="resume-here" class="resume-marker">
+  <div class="resume-label"><strong>You are here</strong>Resume from Phase 2 Step 3 — TurtleBot 3 stack installed and <code>TURTLEBOT3_MODEL=burger</code> set. Next up: launch Gazebo and see the robot spawn. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
+</div>
 
 **Terminal A** — your first sim launch:
 
