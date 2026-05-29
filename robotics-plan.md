@@ -863,24 +863,21 @@ ros2 pkg create --build-type ament_python ~/ros2_ws/src/odom_demo \
   --dependencies rclpy nav_msgs geometry_msgs odom_demo_msgs
 ```
 
-**Expected:** `odom_demo/` scaffolded with `package.xml`, `setup.py`, `setup.cfg`, `resource/odom_demo`, and an empty `odom_demo/odom_demo/` Python module folder.
+**Expected:** `odom_demo/` scaffolded with `package.xml`, `setup.py`, `setup.cfg`, `resource/odom_demo`, and `test/`.
 
-**Why it matters:** `ament_python` packages are plain `setup.py` projects — no CMake. The dependencies you pass become `<exec_depend>` entries in `package.xml` so `rosdep` knows what to install.
+> ⚠️ **Known quirk:** when `ros2 pkg create --build-type ament_python` is given an **absolute path**, it doesn't always create the inner Python module folder (`odom_demo/odom_demo/__init__.py`). Create it explicitly so subsequent steps just work:
+> ```bash
+> mkdir -p ~/ros2_ws/src/odom_demo/odom_demo
+> touch ~/ros2_ws/src/odom_demo/odom_demo/__init__.py
+> ls ~/ros2_ws/src/odom_demo/odom_demo/    # should print: __init__.py
+> ```
+> This is a safe no-op if the folder is already there.
+
+**Why it matters:** `ament_python` packages are plain `setup.py` projects — no CMake. The dependencies you pass become `<exec_depend>` entries in `package.xml` so `rosdep` knows what to install. The **inner** `odom_demo/odom_demo/` folder is the actual Python module (where your node `.py` files go, so `from odom_demo.odom_publisher import …` works). The outer `odom_demo/` is the ROS package wrapper.
 
 ---
 
 **3.4 Write the publisher node (fake odometry)**
-
-> 🧠 **Heads up — the double-`odom_demo/` folder is intentional.** `ament_python` packages have a nested structure: the **outer** `~/ros2_ws/src/odom_demo/` is the ROS 2 package (holds `package.xml`, `setup.py`); the **inner** `~/ros2_ws/src/odom_demo/odom_demo/` is the actual Python module (holds `__init__.py` and your node `.py` files, so `from odom_demo.odom_publisher import …` works). Every Python ROS 2 package looks like this — it trips everyone up the first time.
-
-First make sure the inner module folder exists (it should after 3.3, but if `ros2 pkg create` didn't fully scaffold for any reason, this `mkdir -p` is a safe no-op when the folder already exists):
-
-```bash
-mkdir -p ~/ros2_ws/src/odom_demo/odom_demo
-touch ~/ros2_ws/src/odom_demo/odom_demo/__init__.py
-ls ~/ros2_ws/src/odom_demo/odom_demo/
-```
-**Expected:** at minimum `__init__.py` is listed. Good — now write the node:
 
 ```bash
 cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_publisher.py << 'EOF'
