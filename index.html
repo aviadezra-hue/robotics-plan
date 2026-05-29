@@ -1316,35 +1316,34 @@ All commands run inside your existing `~/ros2_ws` from Step 1.
 
 ---
 
-**3.1 Open a sourced terminal & verify your workspace**
+**3.1 Open a sourced terminal & cd into your workspace source folder**
 
-Open Ubuntu (any new terminal — your `~/.bashrc` from Step 1.6 already sources ROS 2 + the workspace overlay automatically). You don't need to `cd` anywhere — every command in Step 3 uses absolute paths (`~/ros2_ws/src/...`), so you can stay at your home directory the whole time.
-
-Just sanity-check the workspace exists:
+Open Ubuntu (any new terminal — your `~/.bashrc` from Step 1.6 already sources ROS 2 + the workspace overlay automatically). Then cd into `~/ros2_ws/src` **once** and stay there for the rest of Step 3 — every command below uses paths relative to this folder, which keeps them short and matches how the `ros2 pkg create` tool actually wants to be called.
 
 ```bash
-ls ~/ros2_ws/src
+cd ~/ros2_ws/src
+ls
 ```
 
-**Expected:** lists whatever packages you've already created (could be empty if this is a fresh `~/ros2_ws`).
+**Expected:** `pwd` reports `/home/aviad/ros2_ws/src`; `ls` shows whatever packages you've already created (could be empty if this is a fresh `~/ros2_ws`).
 
-**Why it matters:** every ROS 2 package lives in `<workspace>/src/<pkg_name>/`. `colcon build` (run from the workspace root) scans `src/` recursively and builds whatever it finds. Using absolute paths in the commands below means it doesn't matter where you started — copy-paste each block and it just works.
+> 🧹 **If you've run Step 3 before** (or the folders exist from a half-finished attempt), `ros2 pkg create` will error with *"package already exists"*. Wipe both packages cleanly first:
+> ```bash
+> rm -rf odom_demo_msgs odom_demo
+> rm -rf ~/ros2_ws/build/odom_demo_msgs ~/ros2_ws/build/odom_demo \
+>        ~/ros2_ws/install/odom_demo_msgs ~/ros2_ws/install/odom_demo \
+>        ~/ros2_ws/log
+> ```
+> First line removes the source folders (you're already in `~/ros2_ws/src`); second removes leftover build artifacts so `colcon build` starts clean.
+
+**Why it matters:** every ROS 2 package lives in `<workspace>/src/<pkg_name>/`. `colcon build` (run from the workspace root) scans `src/` recursively and builds whatever it finds. Working from `~/ros2_ws/src` keeps the commands you'll type short and lets `ros2 pkg create <pkg_name>` correctly scaffold the inner module folder for Python packages (which it skips when given an absolute path — a known quirk).
 
 ---
 
 **3.2 Create the custom-message package**
 
-> 🧹 **If you've run Step 3 before** (or the folder exists from a half-finished attempt), `ros2 pkg create` will error with *"package already exists"*. Wipe both packages cleanly first:
-> ```bash
-> rm -rf ~/ros2_ws/src/odom_demo_msgs ~/ros2_ws/src/odom_demo
-> rm -rf ~/ros2_ws/build/odom_demo_msgs ~/ros2_ws/build/odom_demo \
->        ~/ros2_ws/install/odom_demo_msgs ~/ros2_ws/install/odom_demo \
->        ~/ros2_ws/log
-> ```
-> The first line removes the source folders; the second removes any leftover build artifacts so `colcon build` starts from a clean slate.
-
 ```bash
-ros2 pkg create --build-type ament_cmake ~/ros2_ws/src/odom_demo_msgs \
+ros2 pkg create --build-type ament_cmake odom_demo_msgs \
   --license Apache-2.0 \
   --dependencies std_msgs builtin_interfaces
 ```
@@ -1358,8 +1357,8 @@ ros2 pkg create --build-type ament_cmake ~/ros2_ws/src/odom_demo_msgs \
 Now define the message itself:
 
 ```bash
-mkdir -p ~/ros2_ws/src/odom_demo_msgs/msg
-cat > ~/ros2_ws/src/odom_demo_msgs/msg/VelocityStats.msg << 'EOF'
+mkdir -p odom_demo_msgs/msg
+cat > odom_demo_msgs/msg/VelocityStats.msg << 'EOF'
 # Computed velocity statistics from /odom samples
 builtin_interfaces/Time stamp
 float64 linear_speed       # m/s (magnitude of linear velocity in xy)
@@ -1371,12 +1370,12 @@ EOF
 
 **Expected:** no output; file created. `cat` confirms:
 ```bash
-cat ~/ros2_ws/src/odom_demo_msgs/msg/VelocityStats.msg
+cat odom_demo_msgs/msg/VelocityStats.msg
 ```
 
 **Why it matters:** message definitions are language-agnostic. Both Python and C++ nodes get auto-generated classes from this one `.msg` file.
 
-Wire the message into the build. Edit `~/ros2_ws/src/odom_demo_msgs/CMakeLists.txt` — find the `find_package(ament_cmake REQUIRED)` line and add **right after it**:
+Wire the message into the build. Edit `odom_demo_msgs/CMakeLists.txt` — find the `find_package(ament_cmake REQUIRED)` line and add **right after it**:
 
 ```cmake
 find_package(rosidl_default_generators REQUIRED)
@@ -1390,7 +1389,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 ament_export_dependencies(rosidl_default_runtime)
 ```
 
-And in `~/ros2_ws/src/odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywhere among the existing `<depend>` lines):
+And in `odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywhere among the existing `<depend>` lines):
 
 ```xml
 <buildtool_depend>rosidl_default_generators</buildtool_depend>
@@ -1405,29 +1404,26 @@ And in `~/ros2_ws/src/odom_demo_msgs/package.xml`, add these inside the `<packag
 **3.3 Create the Python package**
 
 ```bash
-ros2 pkg create --build-type ament_python ~/ros2_ws/src/odom_demo \
+ros2 pkg create --build-type ament_python odom_demo \
   --license Apache-2.0 \
   --dependencies rclpy nav_msgs geometry_msgs odom_demo_msgs
 ```
 
-**Expected:** `odom_demo/` scaffolded with `package.xml`, `setup.py`, `setup.cfg`, `resource/odom_demo`, and `test/`.
+**Expected:** `odom_demo/` scaffolded with `package.xml`, `setup.py`, `setup.cfg`, `resource/odom_demo`, `test/`, **and** the inner Python module folder `odom_demo/odom_demo/` containing `__init__.py`. Verify:
 
-> ⚠️ **Known quirk:** when `ros2 pkg create --build-type ament_python` is given an **absolute path**, it doesn't always create the inner Python module folder (`odom_demo/odom_demo/__init__.py`). Create it explicitly so subsequent steps just work:
-> ```bash
-> mkdir -p ~/ros2_ws/src/odom_demo/odom_demo
-> touch ~/ros2_ws/src/odom_demo/odom_demo/__init__.py
-> ls ~/ros2_ws/src/odom_demo/odom_demo/    # should print: __init__.py
-> ```
-> This is a safe no-op if the folder is already there.
+```bash
+ls odom_demo/odom_demo/
+```
+should print `__init__.py`.
 
-**Why it matters:** `ament_python` packages are plain `setup.py` projects — no CMake. The dependencies you pass become `<exec_depend>` entries in `package.xml` so `rosdep` knows what to install. The **inner** `odom_demo/odom_demo/` folder is the actual Python module (where your node `.py` files go, so `from odom_demo.odom_publisher import …` works). The outer `odom_demo/` is the ROS package wrapper.
+**Why it matters:** `ament_python` packages are plain `setup.py` projects — no CMake. The dependencies you pass become `<exec_depend>` entries in `package.xml` so `rosdep` knows what to install. The double-`odom_demo/` folder layout is intentional: the **outer** folder is the ROS package (with `package.xml`, `setup.py`); the **inner** is the actual Python module (where your node `.py` files go, so `from odom_demo.odom_publisher import …` works).
 
 ---
 
 **3.4 Write the publisher node (fake odometry)**
 
 ```bash
-cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_publisher.py << 'EOF'
+cat > odom_demo/odom_demo/odom_publisher.py << 'EOF'
 import math
 import rclpy
 from rclpy.node import Node
@@ -1483,7 +1479,7 @@ if __name__ == '__main__':
 EOF
 ```
 
-**Expected:** no output; file created. Sanity-check with `wc -l` — should be ~45 lines.
+**Expected:** no output; file created. Sanity-check with `wc -l odom_demo/odom_demo/odom_publisher.py` — should be ~45 lines.
 
 **Why it matters:** this is the canonical ROS 2 Python node pattern: subclass `Node`, declare parameters, create publishers/timers in `__init__`, do work in callbacks. We're faking a robot driving in a circle so `/odom` has realistic-looking data.
 
@@ -1492,7 +1488,7 @@ EOF
 **3.5 Write the subscriber node (computes velocity stats)**
 
 ```bash
-cat > ~/ros2_ws/src/odom_demo/odom_demo/odom_subscriber.py << 'EOF'
+cat > odom_demo/odom_demo/odom_subscriber.py << 'EOF'
 import math
 import rclpy
 from rclpy.node import Node
@@ -1555,7 +1551,7 @@ EOF
 
 **3.6 Wire the entry points and write the launch file**
 
-ROS 2 needs to know which Python functions are runnable nodes. Edit `~/ros2_ws/src/odom_demo/setup.py` and find the `entry_points={...}` block. Replace it with:
+ROS 2 needs to know which Python functions are runnable nodes. Edit `odom_demo/setup.py` and find the `entry_points={...}` block. Replace it with:
 
 ```python
     entry_points={
@@ -1577,8 +1573,8 @@ You may also need `import os` and `from glob import glob` at the top of `setup.p
 Now create the launch file:
 
 ```bash
-mkdir -p ~/ros2_ws/src/odom_demo/launch
-cat > ~/ros2_ws/src/odom_demo/launch/demo.launch.py << 'EOF'
+mkdir -p odom_demo/launch
+cat > odom_demo/launch/demo.launch.py << 'EOF'
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
@@ -1621,6 +1617,8 @@ EOF
 ---
 
 **3.7 Build & source**
+
+`colcon build` must be run from the workspace **root** (one level up from `src`):
 
 ```bash
 cd ~/ros2_ws
