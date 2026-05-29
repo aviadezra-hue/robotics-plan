@@ -1630,7 +1630,9 @@ colcon build --packages-select odom_demo_msgs odom_demo
 Summary: 2 packages finished [XXs]
 ```
 
-**Why it matters:** `--packages-select` builds *only* these two packages (faster than rebuilding everything). `odom_demo_msgs` builds first because `odom_demo` depends on it — colcon figures the order out from `package.xml`.
+![colcon build success](images/phase1-colcon-build.png)
+
+**Why it matters:** `--packages-select` builds *only* these two packages(faster than rebuilding everything). `odom_demo_msgs` builds first because `odom_demo` depends on it — colcon figures the order out from `package.xml`.
 
 Now re-source the workspace so the new packages are on the path **in this shell**:
 
