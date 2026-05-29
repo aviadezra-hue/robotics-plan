@@ -30,8 +30,8 @@ function Ensure-Module($name) {
 
 Ensure-Module 'Microsoft.Graph.Authentication'
 
-Write-Host "Connecting to Microsoft Graph (Tasks.ReadWrite)…" -ForegroundColor Cyan
-Connect-MgGraph -Scopes 'Tasks.ReadWrite' -NoWelcome | Out-Null
+Write-Host "Connecting to Microsoft Graph (Tasks.ReadWrite) — device code flow…" -ForegroundColor Cyan
+Connect-MgGraph -Scopes 'Tasks.ReadWrite' -UseDeviceCode -NoWelcome | Out-Null
 
 $ctx = Get-MgContext
 Write-Host "Signed in as: $($ctx.Account)" -ForegroundColor Green
