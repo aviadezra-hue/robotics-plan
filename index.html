@@ -1332,6 +1332,15 @@ cd ~/ros2_ws/src
 
 **3.2 Create the custom-message package**
 
+> 🧹 **If you've run Step 3 before** (or the folder exists from a half-finished attempt), `ros2 pkg create` will error with *"package already exists"*. Wipe both packages cleanly first:
+> ```bash
+> rm -rf ~/ros2_ws/src/odom_demo_msgs ~/ros2_ws/src/odom_demo
+> rm -rf ~/ros2_ws/build/odom_demo_msgs ~/ros2_ws/build/odom_demo \
+>        ~/ros2_ws/install/odom_demo_msgs ~/ros2_ws/install/odom_demo \
+>        ~/ros2_ws/log
+> ```
+> The first line removes the source folders; the second removes any leftover build artifacts so `colcon build` starts from a clean slate.
+
 ```bash
 ros2 pkg create --build-type ament_cmake odom_demo_msgs \
   --dependencies std_msgs builtin_interfaces
