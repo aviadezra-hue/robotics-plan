@@ -504,6 +504,84 @@
   .copilot-note li { margin: 6px 0; }
   .copilot-note p:last-child { margin-bottom: 0; }
 
+  /* ---------- Deck spotlight ---------- */
+  .deck-spotlight {
+    margin: 28px 0 32px;
+    padding: 28px;
+    background: linear-gradient(135deg, #4156c8 0%, #283582 100%);
+    border-radius: 18px;
+    color: #fff;
+    box-shadow: 0 18px 50px -20px rgba(40, 53, 130, 0.55);
+    position: relative;
+    overflow: hidden;
+  }
+  .deck-spotlight::before {
+    content: "";
+    position: absolute; inset: -40% -10% auto auto;
+    width: 360px; height: 360px;
+    background: radial-gradient(circle, rgba(255,196,87,0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .deck-spotlight-grid {
+    display: grid;
+    grid-template-columns: minmax(240px, 360px) 1fr;
+    gap: 32px;
+    align-items: start;
+    position: relative;
+  }
+  .deck-spotlight-cover {
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .deck-spotlight-cover img {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 12px;
+    box-shadow: 0 14px 38px -12px rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    display: block;
+    transition: transform 0.2s ease;
+  }
+  .deck-spotlight-cover a:hover img { transform: translateY(-3px); }
+  .deck-spotlight-cta { text-align: center; }
+  .deck-spotlight-cta a {
+    display: inline-block;
+    padding: 12px 22px;
+    background: #ffc457;
+    color: #283582 !important;
+    border-radius: 999px;
+    font-weight: 700;
+    text-decoration: none !important;
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .deck-spotlight-cta a:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px -6px rgba(0,0,0,0.45);
+  }
+  .deck-spotlight-body { color: #eef0ff; }
+  .deck-spotlight-body h3 {
+    color: #ffc457 !important;
+    margin: 0 0 10px !important;
+    font-size: 18px !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+  .deck-spotlight-body h3:not(:first-child) { margin-top: 22px !important; }
+  .deck-spotlight-body ul { margin: 0; padding-left: 22px; }
+  .deck-spotlight-body li { margin: 5px 0; color: #eef0ff; }
+  .deck-spotlight-body strong { color: #fff; }
+  .deck-spotlight-body a { color: #ffc457; }
+  .deck-spotlight-body code {
+    background: rgba(255,255,255,0.12);
+    color: #ffe7b0;
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  @media (max-width: 760px) {
+    .deck-spotlight { padding: 20px; }
+    .deck-spotlight-grid { grid-template-columns: 1fr; gap: 20px; }
+  }
+
   /* ---------- Back to top button ---------- */
   .to-top {
     position: fixed; bottom: 24px; right: 24px;
@@ -1769,6 +1847,66 @@ If both nodes start cleanly, the topic streams at the expected rate, and the sub
 - 🧩 **Write launch files** in Python — composable, with arguments, conditions, and grouping.
 - 🐞 **Decode cryptic ROS errors** — `lookup would require extrapolation into the past`, `failed to load controller`, missing transforms… I'll explain the root cause.
 - 📝 **Code review** your first nodes — I'll flag missing QoS, blocking calls in callbacks, unmanaged thread issues.
+
+</div>
+
+---
+
+## 🎓 Phase 1 Deck — Internalize the Fundamentals
+
+> 📊 **An 18-slide PowerPoint that turns Phase 1 from "I typed the commands" into "I get it."** Concept-first, code-light, 15–20 min on the couch.
+
+<div class="deck-spotlight">
+
+<div class="deck-spotlight-grid">
+
+<div class="deck-spotlight-cover">
+
+[![Phase 1 Internalization Deck cover](images/phase1-deck-cover.png "Click to download the .pptx")](Phase1-ROS2-Internalize.pptx)
+
+<div class="deck-spotlight-cta">
+
+[⬇️ **Download .pptx** (18 slides)](Phase1-ROS2-Internalize.pptx)
+
+</div>
+
+</div>
+
+<div class="deck-spotlight-body">
+
+### What's inside
+
+- 🕸️ **The ROS 2 graph** — nodes + topics, drawn out
+- 🔁 **Topics vs Services vs Actions** — when to reach for each
+- 📨 **Topics in depth** + QoS in one slide
+- 🛠️ **Services & Parameters** — the runtime knobs
+- 🚀 **Launch files** — declarative orchestration
+- 🎞️ **Bags** — record once, replay forever
+- 📦 **Custom messages** — your own interfaces
+- 💻 **The pub/sub coding pattern** — a Python skeleton you'll reuse forever
+- 🗂️ **Workspace & package anatomy** — `src/build/install/log` and what's in `setup.py`
+- 🧾 **Phase 1 CLI cheat-sheet** — `ros2 node/topic/service/param/bag/pkg/run/launch` on one page
+- 🔀 **The Step 2.8 dataflow** — remappings drawn out
+- 🧠 **Recall test** — 8 questions to check yourself
+- ⚠️ **Phase 1 pitfalls** — the 6 things that bite everyone
+- 📈 **Phase 1 in three arcs** — the story of what you built
+- 🧭 **5 mental models** worth keeping forever
+- ➡️ **What's next** — bridge into Phase 2
+
+### When to use it
+
+- ✅ **After finishing Phase 1 Step 3** — consolidate before jumping to Gazebo
+- ✅ **On the couch / mobile / phone** — while a `colcon build` runs
+- ✅ **Before a job interview** — recall test + mental models slides are your refresher
+- ✅ **As a teaching aid** — share with a teammate ramping onto ROS 2
+
+### How it was made
+
+Generated programmatically from [`make_phase1_deck.py`](make_phase1_deck.py) using [`python-pptx`](https://python-pptx.readthedocs.io/). Want to tweak wording, add slides, or restyle? Edit the script and re-run `py -3 make_phase1_deck.py` — the deck rebuilds in &lt;1 second.
+
+</div>
+
+</div>
 
 </div>
 

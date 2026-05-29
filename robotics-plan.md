@@ -1180,7 +1180,66 @@ If both nodes start cleanly, the topic streams at the expected rate, and the sub
 
 ---
 
-## 🌍 Phase 2 — Simulation Deep Dive
+## 🎓 Phase 1 Deck — Internalize the Fundamentals
+
+> 📊 **An 18-slide PowerPoint that turns Phase 1 from "I typed the commands" into "I get it."** Concept-first, code-light, 15–20 min on the couch.
+
+<div class="deck-spotlight">
+
+<div class="deck-spotlight-grid">
+
+<div class="deck-spotlight-cover">
+
+[![Phase 1 Internalization Deck cover](images/phase1-deck-cover.png "Click to download the .pptx")](Phase1-ROS2-Internalize.pptx)
+
+<div class="deck-spotlight-cta">
+
+[⬇️ **Download .pptx** (18 slides)](Phase1-ROS2-Internalize.pptx)
+
+</div>
+
+</div>
+
+<div class="deck-spotlight-body">
+
+### What's inside
+
+- 🕸️ **The ROS 2 graph** — nodes + topics, drawn out
+- 🔁 **Topics vs Services vs Actions** — when to reach for each
+- 📨 **Topics in depth** + QoS in one slide
+- 🛠️ **Services & Parameters** — the runtime knobs
+- 🚀 **Launch files** — declarative orchestration
+- 🎞️ **Bags** — record once, replay forever
+- 📦 **Custom messages** — your own interfaces
+- 💻 **The pub/sub coding pattern** — a Python skeleton you'll reuse forever
+- 🗂️ **Workspace & package anatomy** — `src/build/install/log` and what's in `setup.py`
+- 🧾 **Phase 1 CLI cheat-sheet** — `ros2 node/topic/service/param/bag/pkg/run/launch` on one page
+- 🔀 **The Step 2.8 dataflow** — remappings drawn out
+- 🧠 **Recall test** — 8 questions to check yourself
+- ⚠️ **Phase 1 pitfalls** — the 6 things that bite everyone
+- 📈 **Phase 1 in three arcs** — the story of what you built
+- 🧭 **5 mental models** worth keeping forever
+- ➡️ **What's next** — bridge into Phase 2
+
+### When to use it
+
+- ✅ **After finishing Phase 1 Step 3** — consolidate before jumping to Gazebo
+- ✅ **On the couch / mobile / phone** — while a `colcon build` runs
+- ✅ **Before a job interview** — recall test + mental models slides are your refresher
+- ✅ **As a teaching aid** — share with a teammate ramping onto ROS 2
+
+### How it was made
+
+Generated programmatically from [`make_phase1_deck.py`](make_phase1_deck.py) using [`python-pptx`](https://python-pptx.readthedocs.io/). Want to tweak wording, add slides, or restyle? Edit the script and re-run `py -3 make_phase1_deck.py` — the deck rebuilds in &lt;1 second.
+
+</div>
+
+</div>
+
+</div>
+
+---
+
 
 ![Phase 2 illustration](https://images.unsplash.com/photo-1581090700227-1e37b190418e?w=1400&h=360&fit=crop&q=80 "Spawn and control robots in a Gazebo simulated world")
 
