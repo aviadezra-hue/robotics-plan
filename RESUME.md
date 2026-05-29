@@ -2,11 +2,10 @@
 
 Live plan: **https://aviadezra-hue.github.io/robotics-plan/**
 Repo: `C:\Users\avezra\repro-robotics-plan` → `https://github.com/aviadezra-hue/robotics-plan`
-Last published commit: `82ad2a3`
 
 ## To resume work on the **plan website** (this repo)
 Say:
-> "Resume my robotics plan. Repo is `C:\Users\avezra\repro-robotics-plan`, published at `https://aviadezra-hue.github.io/robotics-plan/`. Read `RESUME.md` then `robotics-plan.md`."
+> "Resume my robotics plan. Repo is `C:\Users\avezra\repro-robotics-plan`, published at `https://aviadezra-hue.github.io/robotics-plan/`. Read `RESUME.md`, then read the plan content directly out of `index.html` (the embedded markdown is the source of truth)."
 
 ## ✅ Phase 0 — COMPLETE & VALIDATED
 Installed and validated on this machine:
@@ -25,26 +24,22 @@ Installed and validated on this machine:
 1. Make sure VcXsrv is running (look for the **X** icon in your Windows tray; if missing, run it from Start Menu).
 2. In any Ubuntu terminal: `ros2 run <pkg> <node>`.
 
-## To start **Phase 1** (ROS 2 fundamentals)
-Say:
-> "I finished Phase 0 of my robotics plan. Start Phase 1. Plan is at `C:\Users\avezra\repro-robotics-plan\robotics-plan.md`."
-
-Then in Copilot CLI: `/allow-all`, then `/autopilot`.
-
 ## To pick up at any later phase
 Say:
-> "I finished Phase N of my robotics plan. Help me with Phase <N+1>. Read `robotics-plan.md` for context."
+> "I finished Phase N of my robotics plan. Help me with Phase <N+1>. The plan is embedded in `index.html` — read it from there."
 
 ## Where things live
-- `robotics-plan.md` — the plan itself (source of truth, embedded into `index.html`)
-- `index.html` — self-contained published page (Hero, tile nav, embedded markdown)
-- `images/` — phase result screenshots (turtlesim, gazebo, nav2, moveit)
+- **`index.html`** — single source of truth. The plan markdown lives inside `<script type="text/markdown" id="embedded-md">…</script>`. Edit it there.
+- `images/` — phase screenshots referenced from the markdown
+- `Phase1-ROS2-Internalize.pptx` + `make_phase1_deck.py` — Phase 1 internalization deck (generator script regenerates the deck)
+- `todo/` — Microsoft To Do push tooling (lists per phase). Source of truth is `todo/robotics-tasks.json`; push with `todo/push-todo-devicecode.ps1`.
 - `README.md` — repo description with Pages link
 
+> **Note:** the standalone `robotics-plan.md` file was removed — `index.html` is now the only place to edit plan content. Anything you change inside the `embedded-md` script tag will go live on the next push (Pages rebuilds in ~30 s).
+
 ## To make plan edits and publish
-1. Edit `robotics-plan.md`
-2. Re-embed: run PowerShell regex replace of `<script type="text/markdown" id="embedded-md">...</script>` block in `index.html` with the new markdown
-3. `git add -A && git commit -m "..." && git push` — Pages auto-rebuilds in ~30s
+1. Open `index.html`, find the section you want inside `<script type="text/markdown" id="embedded-md">`, and edit the markdown.
+2. `git add -A && git commit -m "..." && git push` — Pages auto-rebuilds.
 
 ## Personal context for the agent
 - Aviad Ezra, senior dev (25 years), Israel 🇮🇱
@@ -53,3 +48,4 @@ Say:
 - Personal GitHub: `aviadezra-hue` (gh CLI authed locally)
 - Microsoft EMU: `avezra_microsoft` (can't host public repos — use personal account)
 - Preferred specialization track: 🦾 **Manipulation** (MoveIt 2, pick-and-place, vision-driven grasping)
+- Microsoft To Do account: `aviadezra@hotmail.com` (lists already populated from `todo/robotics-tasks.json`)
