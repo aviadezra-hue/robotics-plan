@@ -1,0 +1,388 @@
+{
+  "_comment": "Source of truth for the robotics learning task lists. Mirrors phases in robotics-plan.md. Each list becomes a Microsoft To Do list; each task becomes a To Do task with optional checklist subitems.",
+  "lists": [
+    {
+      "name": "🤖 Robotics — Phase 0: Environment Setup",
+      "tasks": [
+        {
+          "title": "Set up WSL2 + Ubuntu + ROS 2 Jazzy",
+          "notes": "One-time environment install. Plan: https://aviadezra-hue.github.io/robotics-plan/#%F0%9F%9B%A0%EF%B8%8F-phase-0--environment-setup",
+          "subitems": [
+            "Enable WSL2 and install Ubuntu 24.04",
+            "Update apt and install build essentials",
+            "Add ROS 2 apt repo and key",
+            "Install ros-jazzy-desktop",
+            "Install colcon, rosdep, vcstool",
+            "Source /opt/ros/jazzy/setup.bash from ~/.bashrc",
+            "Install Windows Terminal + VcXsrv (or WSLg) for GUI apps",
+            "Run turtlesim_node and confirm window appears",
+            "Take the Phase 0 validation screenshot"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 1: ROS 2 Fundamentals",
+      "tasks": [
+        {
+          "title": "Step 1 — Create your ROS 2 workspace (do this once)",
+          "notes": "Plan: Phase 1 Step 1. Goal: have ~/ros2_ws built and sourced.",
+          "subitems": [
+            "mkdir -p ~/ros2_ws/src",
+            "cd ~/ros2_ws && colcon build",
+            "Source install/setup.bash from ~/.bashrc",
+            "Verify with `ros2 pkg list | head`"
+          ]
+        },
+        {
+          "title": "Step 2 — Explore the ROS 2 CLI with turtlesim",
+          "notes": "Plan: Phase 1 Step 2. Goal: be fluent with ros2 node/topic/service/param/bag and remappings.",
+          "subitems": [
+            "ros2 run turtlesim turtlesim_node",
+            "ros2 run turtlesim turtle_teleop_key (drive it)",
+            "ros2 node list / node info /turtlesim",
+            "ros2 topic list / echo /turtle1/pose / hz",
+            "ros2 topic pub /turtle1/cmd_vel ...",
+            "ros2 service call /spawn / set_pen",
+            "ros2 param list / get / set",
+            "ros2 bag record / play",
+            "rqt_graph — visualize the graph",
+            "Spawn turtle2 + remap teleop to drive it"
+          ]
+        },
+        {
+          "title": "Step 3 — Write your first ROS 2 package (odom_demo mini-project)",
+          "notes": "Plan: Phase 1 Step 3 (sub-steps 3.1–3.8). All commands relative to ~/ros2_ws/src.",
+          "subitems": [
+            "3.1  cd ~/ros2_ws/src",
+            "3.2  Create odom_interfaces (ament_cmake)",
+            "3.3  Create odom_demo (ament_python)",
+            "3.4  Define VelocityStamped.msg in odom_interfaces",
+            "3.5  Write the odom_pub.py publisher node",
+            "3.6  Write the odom_sub.py subscriber node",
+            "3.7  Wire setup.py entry_points + demo.launch.py + colcon build",
+            "3.8  ros2 launch odom_demo demo.launch.py + introspect + override params"
+          ]
+        },
+        {
+          "title": "📊 Read the Phase 1 Internalization Deck (18 slides)",
+          "notes": "Download: https://aviadezra-hue.github.io/robotics-plan/Phase1-ROS2-Internalize.pptx — concept-first, 15–20 min on the couch. Consolidates everything before Phase 2.",
+          "subitems": [
+            "ROS 2 graph + 3 communication patterns",
+            "Topics deep + services & params + launch + bags",
+            "Custom messages + pub/sub coding pattern",
+            "Workspace anatomy + CLI cheat-sheet",
+            "Recall test (8 questions)",
+            "5 mental models worth keeping"
+          ]
+        },
+        {
+          "title": "✅ Phase 1 validation checkpoint",
+          "notes": "Build odom_demo, launch it, and confirm the topic streams cleanly with the subscriber logging computed velocities.",
+          "subitems": [
+            "colcon build --packages-select odom_demo (clean)",
+            "ros2 launch odom_demo demo.launch.py",
+            "ros2 topic echo / hz on the demo topic",
+            "Subscriber log shows computed velocities"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 2: Simulation Deep Dive",
+      "tasks": [
+        {
+          "title": "Step 1 — Install the TurtleBot 3 simulation stack",
+          "notes": "sudo apt install ros-jazzy-turtlebot3* ros-jazzy-teleop-twist-keyboard",
+          "subitems": [
+            "Install ros-jazzy-turtlebot3*",
+            "Install ros-jazzy-teleop-twist-keyboard",
+            "Confirm with `ros2 pkg list | grep turtlebot3`"
+          ]
+        },
+        {
+          "title": "Step 2 — Configure TURTLEBOT3_MODEL=burger in ~/.bashrc",
+          "notes": "Persist the model env var so every new shell knows which robot to spawn.",
+          "subitems": [
+            "echo 'export TURTLEBOT3_MODEL=burger' >> ~/.bashrc",
+            "source ~/.bashrc",
+            "echo $TURTLEBOT3_MODEL  → 'burger'"
+          ]
+        },
+        {
+          "title": "Step 3 — Launch Gazebo + spawn the robot (empty world)",
+          "notes": "ros2 launch turtlebot3_gazebo empty_world.launch.py",
+          "subitems": [
+            "Open terminal 1 → launch empty_world",
+            "Confirm Gazebo opens with Burger on the floor",
+            "ros2 node list shows /gazebo, /robot_state_publisher, etc."
+          ]
+        },
+        {
+          "title": "Step 4 — Drive it with keyboard teleop",
+          "notes": "Terminal 2: ros2 run teleop_twist_keyboard teleop_twist_keyboard",
+          "subitems": [
+            "Open terminal 2 → run teleop_twist_keyboard",
+            "Use w/x/a/d to drive",
+            "Confirm robot moves in Gazebo"
+          ]
+        },
+        {
+          "title": "Step 5 — Inspect /cmd_vel, /odom, /scan live",
+          "notes": "Use Phase 1 CLI muscle memory on a real robot.",
+          "subitems": [
+            "ros2 topic echo /cmd_vel  (while driving)",
+            "ros2 topic echo /odom     (header + pose)",
+            "ros2 topic hz /scan       (~5 Hz)",
+            "ros2 topic info /scan     (sensor_msgs/LaserScan)"
+          ]
+        },
+        {
+          "title": "Step 6 — Visualize robot + lidar in RViz2",
+          "notes": "Fixed Frame=odom; add RobotModel, TF, LaserScan(/scan).",
+          "subitems": [
+            "rviz2",
+            "Set Fixed Frame = odom",
+            "Add RobotModel display",
+            "Add TF display",
+            "Add LaserScan display on /scan",
+            "Drive and confirm the scan tracks the robot"
+          ]
+        },
+        {
+          "title": "Step 7 — Drive through TurtleBot3 house + view_frames",
+          "notes": "ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py",
+          "subitems": [
+            "Launch turtlebot3_house",
+            "Drive around the rooms",
+            "ros2 run tf2_tools view_frames",
+            "Open the generated frames.pdf"
+          ]
+        },
+        {
+          "title": "Step 8 — Mini-project: sim_safety / front_distance_monitor node",
+          "notes": "Subscribe to /scan, publish min front distance on /front_distance, WARN at <0.5 m.",
+          "subitems": [
+            "8.1  Create ament_python package sim_safety in ~/ros2_ws/src",
+            "8.2  Write front_distance_monitor.py (subscribes to /scan)",
+            "8.3  Wire entry_points in setup.py",
+            "8.4  colcon build --packages-select sim_safety",
+            "8.5  Run the node + drive toward a wall + watch WARN logs"
+          ]
+        },
+        {
+          "title": "✅ Phase 2 validation checkpoint",
+          "notes": "Robot drives in Gazebo, RViz2 shows live lidar + TF, and front_distance_monitor warns when you approach a wall.",
+          "subitems": [
+            "Gazebo + teleop + RViz2 running together",
+            "Live scan visible in RViz2",
+            "sim_safety logs WARN when close to wall"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 3: Navigation & Perception",
+      "tasks": [
+        {
+          "title": "Step 1 — Install Nav2 + the simulated robot",
+          "notes": "sudo apt install ros-jazzy-navigation2 ros-jazzy-nav2-bringup ros-jazzy-slam-toolbox",
+          "subitems": [
+            "Install navigation2 + nav2-bringup",
+            "Install slam-toolbox",
+            "Confirm with `ros2 pkg list | grep nav2`"
+          ]
+        },
+        {
+          "title": "Step 2 — Launch the simulated world & meet the robot",
+          "notes": "Bring up TurtleBot 3 in a known world for mapping.",
+          "subitems": [
+            "Launch turtlebot3_world (or house)",
+            "rqt_graph to see active nodes",
+            "Confirm /scan and /odom are streaming"
+          ]
+        },
+        {
+          "title": "Step 3 — Build a map with SLAM (slam_toolbox)",
+          "notes": "Drive the robot to map the environment in real time.",
+          "subitems": [
+            "Launch slam_toolbox in async mode",
+            "Open RViz2 with the Nav2 config",
+            "Drive slowly with teleop to cover the world",
+            "Watch the occupancy grid fill in"
+          ]
+        },
+        {
+          "title": "Step 4 — Save the map to disk",
+          "notes": "ros2 run nav2_map_server map_saver_cli -f ~/maps/my_map",
+          "subitems": [
+            "mkdir -p ~/maps",
+            "map_saver_cli -f ~/maps/my_map",
+            "Verify .pgm + .yaml exist"
+          ]
+        },
+        {
+          "title": "Step 5 — Relaunch in localization mode (AMCL)",
+          "notes": "Switch from SLAM to localization against the saved map.",
+          "subitems": [
+            "Launch Nav2 bringup with map:=~/maps/my_map.yaml",
+            "Use 2D Pose Estimate in RViz2 to seed pose",
+            "Drive briefly so AMCL converges"
+          ]
+        },
+        {
+          "title": "Step 6 — Send a navigation goal from RViz2",
+          "notes": "Use the Nav2 Goal tool to send the robot somewhere.",
+          "subitems": [
+            "Click 'Nav2 Goal' in RViz2",
+            "Click destination in the map",
+            "Watch global + local plans render",
+            "Robot drives autonomously to goal"
+          ]
+        },
+        {
+          "title": "Step 7 — Send a goal from the CLI (no RViz)",
+          "notes": "ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose ...",
+          "subitems": [
+            "ros2 action list | grep navigate",
+            "Send a goal via action send_goal",
+            "Observe feedback + result in the terminal"
+          ]
+        },
+        {
+          "title": "Step 8 — Inspect & tune Nav2",
+          "notes": "Read params, tweak velocity / inflation / planner choices.",
+          "subitems": [
+            "ros2 param list /controller_server",
+            "Tune max_vel_x / min_obstacle_dist",
+            "Swap planner (NavfnPlanner vs SmacPlanner)",
+            "Reload and retest"
+          ]
+        },
+        {
+          "title": "✅ Phase 3 validation checkpoint",
+          "notes": "Map saved; robot relocalizes; autonomous nav to clicked goal completes without manual intervention.",
+          "subitems": [
+            "Saved map opens cleanly in RViz2",
+            "AMCL converges from a 2D Pose Estimate",
+            "Robot navigates from A to B autonomously"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 4: Manipulation (MoveIt 2)",
+      "tasks": [
+        {
+          "title": "Learn the 4 manipulation pillars",
+          "notes": "Conceptual foundation before MoveIt practice.",
+          "subitems": [
+            "Forward / inverse kinematics",
+            "Motion planning (OMPL / Pilz)",
+            "Trajectory execution + controllers (ros2_control)",
+            "Grasping & perception integration"
+          ]
+        },
+        {
+          "title": "Pick a simulated arm + run the MoveIt demo",
+          "notes": "Panda or UR5 with MoveIt 2 in RViz.",
+          "subitems": [
+            "Install ros-jazzy-moveit + chosen arm package",
+            "Launch the MoveIt demo for the arm",
+            "Drag the IK marker; click Plan + Execute",
+            "Save a couple of poses"
+          ]
+        },
+        {
+          "title": "Follow the 8-week roadmap (one task per week)",
+          "notes": "Progress from kinematics → planning → grasping → custom robot.",
+          "subitems": [
+            "W1: FK/IK math refresher + URDF basics",
+            "W2: MoveIt Setup Assistant on a stock arm",
+            "W3: Planning groups + end-effector + scene objects",
+            "W4: Pick & place with grasps",
+            "W5: ros2_control + simulated joint controllers",
+            "W6: Perception → detect object → plan to grasp",
+            "W7: Multi-step task (pick + stack)",
+            "W8: Wrap up & demo recording"
+          ]
+        },
+        {
+          "title": "✅ Phase 4 validation checkpoint",
+          "notes": "End-to-end pick & place of a perceived object in simulation.",
+          "subitems": [
+            "Object detection feeds a grasp pose",
+            "MoveIt plans + executes the grasp",
+            "Object is placed at a different location"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 5: Buy Hardware",
+      "tasks": [
+        {
+          "title": "Pick your track + first physical robot",
+          "notes": "Mobile (TurtleBot/Create 3), manipulator (Niryo/UFactory), or DIY.",
+          "subitems": [
+            "Decide track: mobile, arm, or both",
+            "Research Israeli distributors / shipping options",
+            "Confirm spare parts availability",
+            "Set a budget + order"
+          ]
+        },
+        {
+          "title": "Israel-specific shipping & customs notes",
+          "notes": "Plan ahead for VAT/customs and lithium battery shipping limits.",
+          "subitems": [
+            "Check VAT + customs cost (~17% + brokerage)",
+            "Confirm Li-ion battery shipping options",
+            "Set up a freight forwarder if needed"
+          ]
+        },
+        {
+          "title": "✅ Phase 5 validation checkpoint",
+          "notes": "Hardware delivered, powered on, and pinged from your dev machine.",
+          "subitems": [
+            "Robot powers on cleanly",
+            "Network reachable from WSL2 / dev box",
+            "First teleop command moves it"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "🤖 Robotics — Phase 6: Sim-to-Real Bridge",
+      "tasks": [
+        {
+          "title": "Bring up the real robot's ROS 2 stack",
+          "notes": "Use the same nodes you exercised in simulation, on real hardware.",
+          "subitems": [
+            "Bring up driver + URDF on the real robot",
+            "Confirm /scan, /odom, /tf streaming for real",
+            "Teleop with keyboard / joystick"
+          ]
+        },
+        {
+          "title": "Port your Phase 2/3 code to the real robot",
+          "notes": "Reuse sim_safety, mapping, and Nav2 launch files with hardware params.",
+          "subitems": [
+            "Run sim_safety against real /scan",
+            "Map the real room with slam_toolbox",
+            "Save map + run Nav2 in localization mode",
+            "Send a real navigation goal"
+          ]
+        },
+        {
+          "title": "✅ Phase 6 validation checkpoint",
+          "notes": "Real robot maps a real room and navigates autonomously to a clicked goal.",
+          "subitems": [
+            "Real-world map captured",
+            "Real AMCL localization converges",
+            "Autonomous nav A→B on hardware"
+          ]
+        }
+      ]
+    }
+  ]
+}
