@@ -1985,7 +1985,10 @@ ros2 launch turtlebot3_gazebo empty_world.launch.py
 2. Lots of terminal output ending with `[gzserver-1] [INFO] ... advertising ros service ...` and `[robot_state_publisher-3] [INFO] ... got segment base_link`.
 3. **No errors** — if you see `Error in REST request` (cloud model fetch) that's harmless; if you see `TURTLEBOT3_MODEL is not set` go back to Step 2.
 
-![Gazebo Sim with the TurtleBot 3 Burger spawned in the empty world](images/phase2-step3-gazebo-empty-world.png "Gazebo Sim — empty world with ground_plane, sun, and 'burger' in the Entity Tree on the right (zoom out to see the robot clearly)")
+<figure class="screenshot wide">
+  <img src="images/phase2-step3-gazebo-empty-world.png" alt="Gazebo Sim with the TurtleBot 3 Burger spawned in the empty world">
+  <figcaption>Gazebo Sim — empty world with <code>ground_plane</code>, <code>sun</code>, and <code>burger</code> in the Entity Tree (zoom out to see the robot clearly)</figcaption>
+</figure>
 
 **Why it matters:**this single launch started ~5 nodes: Gazebo's server (`gzserver`) + GUI (`gzclient`), the URDF-driven `robot_state_publisher` (which publishes the TF tree from joint states), the `joint_state_publisher`, and a Gazebo-ROS bridge that exposes the robot's sensors as ROS topics. *Everything you do next in Phase 2 talks to this launched system over those topics.* Leave it running.
 
