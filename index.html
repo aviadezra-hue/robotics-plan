@@ -1678,6 +1678,8 @@ ros2 launch odom_demo demo.launch.py publish_rate_hz:=50.0 radius:=5.0
 
 **Expected:** subscriber log shows `v=2.50m/s` (= radius × omega = 5.0 × 0.5) and `ros2 topic hz /odom` reports ~50 Hz. That confirms launch arguments flow through to ROS parameters correctly.
 
+![Parameter override: v=2.50m/s on the left, /odom rate 50.000 Hz on the right](images/phase1-launch-override.png)
+
 **Why it matters:** this end-to-end loop — *build → launch → introspect → tweak params → re-launch* — is **the development cycle** you'll use every day. Everything past this point in your robotics career (Nav2 stacks, MoveIt motion plans, custom controllers) is just bigger versions of this same loop.
 
 ---
