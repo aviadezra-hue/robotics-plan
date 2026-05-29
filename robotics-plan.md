@@ -1274,6 +1274,8 @@ sudo apt install -y \
 
 **Expected:** apt pulls down ~150–300 MB (the robot URDF/meshes + Gazebo plugins + a couple of pre-built worlds). Ends with `0 upgraded, NN newly installed`.
 
+![apt installing the ros-jazzy-turtlebot3 stack](images/phase2-step1-apt-install.png "apt unpacking the TurtleBot 3 + Nav2 + control packages — progress bar at the bottom")
+
 **Why it matters:** these four packages give you everything the simulator needs — `turtlebot3` ships the URDF/Xacro robot description, `turtlebot3-simulations` + `turtlebot3-gazebo` provide ready-to-run launch files for an empty world and a furnished "house" world, and `turtlebot3-msgs` defines the few custom messages the stack uses. `teleop-twist-keyboard` is the same generic teleop you'd use with any differential-drive robot — it just publishes `geometry_msgs/Twist` on `/cmd_vel`.
 
 > ⏱️ **Heads-up:** if you already ran Phase 3 Step 1, these packages are mostly installed (Phase 3 pulls in the same `turtlebot3-*` stack). Apt will just say "already the newest version" — safe to run.
