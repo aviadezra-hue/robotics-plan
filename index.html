@@ -373,6 +373,43 @@
   @media (max-width: 640px) {
     #resume-fab { right: 14px; bottom: 14px; padding: 10px 16px; font-size: 13px; }
   }
+
+  /* Click-to-zoom images (lightbox) */
+  .markdown-body img:not(.no-zoom) { cursor: zoom-in; }
+  #img-lightbox {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.92);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 10000;
+    cursor: zoom-out;
+    padding: 20px;
+    animation: lb-fade .15s ease;
+  }
+  #img-lightbox.visible { display: flex; }
+  #img-lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto; height: auto;
+    object-fit: contain;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    border-radius: 4px;
+  }
+  #img-lightbox .lb-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: rgba(255,255,255,.12);
+    color: #fff;
+    border: none;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s ease;
+  }
+  #img-lightbox .lb-close:hover { background: rgba(255,255,255,.25); }
+  @keyframes lb-fade { from { opacity: 0; } to { opacity: 1; } }
   .markdown-body table {
     display: table; width: 100%;
     border-collapse: separate; border-spacing: 0;
@@ -2841,6 +2878,10 @@ ros2 launch my_panda_pkg vision_pick.launch.py
 
 <button class="to-top" id="toTopBtn" aria-label="Back to top">↑</button>
 <button id="resume-fab" aria-label="Jump to where I left off">📍 Resume here</button>
+<div id="img-lightbox" role="dialog" aria-label="Image viewer" aria-hidden="true">
+  <button class="lb-close" aria-label="Close">✕</button>
+  <img alt="">
+</div>
 
 <script>
 (function () {
@@ -3069,9 +3110,50 @@ ros2 launch my_panda_pkg vision_pick.launch.py
     io.observe(marker);
   }
 
+  // Image lightbox — click any markdown image to view fullscreen
+  function wireImageLightbox() {
+    const lb = document.getElementById('img-lightbox');
+    if (!lb) return;
+    const lbImg = lb.querySelector('img');
+    const lbClose = lb.querySelector('.lb-close');
+
+    function open(src, alt) {
+      lbImg.src = src;
+      lbImg.alt = alt || '';
+      lb.classList.add('visible');
+      lb.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+    function close() {
+      lb.classList.remove('visible');
+      lb.setAttribute('aria-hidden', 'true');
+      lbImg.src = '';
+      document.body.style.overflow = '';
+    }
+
+    // Delegate clicks on any markdown image (skip explicit .no-zoom opt-outs)
+    document.addEventListener('click', (e) => {
+      const img = e.target.closest('.markdown-body img');
+      if (!img || img.classList.contains('no-zoom')) return;
+      // Don't hijack clicks on images that are themselves inside an <a>
+      if (img.closest('a')) return;
+      e.preventDefault();
+      open(img.currentSrc || img.src, img.alt);
+    });
+
+    lb.addEventListener('click', (e) => {
+      // Click on backdrop or close button closes; click on image itself does too (cursor: zoom-out)
+      close();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && lb.classList.contains('visible')) close();
+    });
+  }
+
   try {
     render(loadMarkdown());
     wireResumeFab();
+    wireImageLightbox();
   } catch (e) {
     content.innerHTML = '<p style="color:#c00;padding:20px">Failed to render: ' + e.message + '</p>';
   }
