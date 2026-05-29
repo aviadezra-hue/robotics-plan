@@ -367,22 +367,9 @@ ros2 run demo_nodes_py listener
 ```
 **Expected:** matching lines: `[INFO] [listener]: I heard: [Hello World: 7]`, with the same numbers showing up.
 
-> 💡 **Tip — name your terminals so you don't lose track.** From here on you'll routinely have 3–4 Ubuntu windows open at once (publisher, subscriber, `ros2 topic echo`, `rviz2`…). A few ways to label them:
-> - **Quick one-off:** `echo -ne "\033]0;talker\007"` sets the current terminal's title to *talker*. Run it in each window with a different name.
-> - **Make it a function** — add to `~/.bashrc` (one-time):
->   ```bash
->   title() { echo -ne "\033]0;$*\007"; }
->   ```
->   Then just type `title talker`, `title listener`, etc.
-> - **Auto-title on every prompt** — also in `~/.bashrc`:
->   ```bash
->   export PROMPT_COMMAND='echo -ne "\033]0;${TERM_TITLE:-$USER@$HOSTNAME}\007"'
->   ```
->   then `export TERM_TITLE="talker"` once per terminal pins the name (survives `cd`, etc.).
-> - **Windows Terminal:** right-click the tab → *Rename Tab* (or `Ctrl+Shift+,`). Works even without the bash trick.
-> - **VS Code integrated terminal:** right-click the tab → *Rename*.
+> 💡 **Tip — name your terminals.** From here on you'll often have 3–4 Ubuntu windows open at once. In **Windows Terminal**, right-click any tab → **Rename tab** to label it (e.g. *talker*, *listener*, *rviz*) — no more squinting at identical `aviad@aviade-laptop:~$` prompts.
 >
-> Pick whatever fits your style — the goal is just "no more squinting at identical `aviad@aviade-laptop:~$` prompts".
+> ![Right-click a Windows Terminal tab, choose Rename tab](images/wt-rename-tab.png)
 
 **✅ If the listener sees the talker's messages, your ROS 2 workspace is fully working and you're ready for Step 2.**
 
