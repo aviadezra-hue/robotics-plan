@@ -1343,10 +1343,13 @@ cd ~/ros2_ws/src
 
 ```bash
 ros2 pkg create --build-type ament_cmake odom_demo_msgs \
+  --license Apache-2.0 \
   --dependencies std_msgs builtin_interfaces
 ```
 
 **Expected:** `ros2` scaffolds `odom_demo_msgs/` with `CMakeLists.txt`, `package.xml`, and empty `include/` + `src/` folders.
+
+> 💡 **Note on the `--license` flag:** without it, you get a harmless warning `Unknown license 'TODO: License declaration'`. `Apache-2.0` is what most ROS 2 packages use — it just sets the `<license>` field in `package.xml` and creates a `LICENSE` file. Pick whatever fits your project (`MIT`, `BSD-3-Clause`, `Apache-2.0`, etc.).
 
 **Why it matters:** `ament_cmake` is required to generate the Python/C++ bindings for custom `.msg`/`.srv`/`.action` files via `rosidl`. The two dependencies are what our message will reference.
 
@@ -1402,6 +1405,7 @@ And in `odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywh
 ```bash
 cd ~/ros2_ws/src
 ros2 pkg create --build-type ament_python odom_demo \
+  --license Apache-2.0 \
   --dependencies rclpy nav_msgs geometry_msgs odom_demo_msgs
 ```
 
