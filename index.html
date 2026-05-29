@@ -3027,14 +3027,20 @@ ros2 launch my_panda_pkg vision_pick.launch.py
       if (level === 2) headingMap.set(h.textContent.trim(), id);
 
       if (level >= 2 && level <= 3) {
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = '#' + id;
-        a.textContent = h.textContent;
-        a.className = 'lvl-' + level;
-        li.appendChild(a);
-        toc.appendChild(li);
-        tocItems.push({ id, link: a, el: h });
+        // Sidebar nav should only show Phases (h2) and Steps (h3) — skip h3s
+        // like "You now know", "Validation Checkpoint", "How Copilot can help", etc.
+        const isStep = level === 3 && /\bStep\s+\d+/i.test(h.textContent);
+        const include = level === 2 || isStep;
+        if (include) {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#' + id;
+          a.textContent = h.textContent;
+          a.className = 'lvl-' + level;
+          li.appendChild(a);
+          toc.appendChild(li);
+          tocItems.push({ id, link: a, el: h });
+        }
       }
     });
 
