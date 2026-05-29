@@ -1316,17 +1316,19 @@ All commands run inside your existing `~/ros2_ws` from Step 1.
 
 ---
 
-**3.1 Open a sourced terminal & cd to your workspace**
+**3.1 Open a sourced terminal & verify your workspace**
 
-Open Ubuntu (any new terminal — your `~/.bashrc` from Step 1.6 already sources ROS 2 + the workspace overlay automatically):
+Open Ubuntu (any new terminal — your `~/.bashrc` from Step 1.6 already sources ROS 2 + the workspace overlay automatically). You don't need to `cd` anywhere — every command in Step 3 uses absolute paths (`~/ros2_ws/src/...`), so you can stay at your home directory the whole time.
+
+Just sanity-check the workspace exists:
 
 ```bash
-cd ~/ros2_ws/src
+ls ~/ros2_ws/src
 ```
 
-**Expected:** no output. You're now in the source folder where new packages live alongside any others you've already created.
+**Expected:** lists whatever packages you've already created (could be empty if this is a fresh `~/ros2_ws`).
 
-**Why it matters:** every ROS 2 package lives in `<workspace>/src/<pkg_name>/`. `colcon build` (run from the workspace root) scans `src/` recursively and builds whatever it finds.
+**Why it matters:** every ROS 2 package lives in `<workspace>/src/<pkg_name>/`. `colcon build` (run from the workspace root) scans `src/` recursively and builds whatever it finds. Using absolute paths in the commands below means it doesn't matter where you started — copy-paste each block and it just works.
 
 ---
 
@@ -1342,7 +1344,7 @@ cd ~/ros2_ws/src
 > The first line removes the source folders; the second removes any leftover build artifacts so `colcon build` starts from a clean slate.
 
 ```bash
-ros2 pkg create --build-type ament_cmake odom_demo_msgs \
+ros2 pkg create --build-type ament_cmake ~/ros2_ws/src/odom_demo_msgs \
   --license Apache-2.0 \
   --dependencies std_msgs builtin_interfaces
 ```
@@ -1356,8 +1358,8 @@ ros2 pkg create --build-type ament_cmake odom_demo_msgs \
 Now define the message itself:
 
 ```bash
-mkdir -p odom_demo_msgs/msg
-cat > odom_demo_msgs/msg/VelocityStats.msg << 'EOF'
+mkdir -p ~/ros2_ws/src/odom_demo_msgs/msg
+cat > ~/ros2_ws/src/odom_demo_msgs/msg/VelocityStats.msg << 'EOF'
 # Computed velocity statistics from /odom samples
 builtin_interfaces/Time stamp
 float64 linear_speed       # m/s (magnitude of linear velocity in xy)
@@ -1369,12 +1371,12 @@ EOF
 
 **Expected:** no output; file created. `cat` confirms:
 ```bash
-cat odom_demo_msgs/msg/VelocityStats.msg
+cat ~/ros2_ws/src/odom_demo_msgs/msg/VelocityStats.msg
 ```
 
 **Why it matters:** message definitions are language-agnostic. Both Python and C++ nodes get auto-generated classes from this one `.msg` file.
 
-Wire the message into the build. Edit `odom_demo_msgs/CMakeLists.txt` — find the `find_package(ament_cmake REQUIRED)` line and add **right after it**:
+Wire the message into the build. Edit `~/ros2_ws/src/odom_demo_msgs/CMakeLists.txt` — find the `find_package(ament_cmake REQUIRED)` line and add **right after it**:
 
 ```cmake
 find_package(rosidl_default_generators REQUIRED)
@@ -1388,7 +1390,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 ament_export_dependencies(rosidl_default_runtime)
 ```
 
-And in `odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywhere among the existing `<depend>` lines):
+And in `~/ros2_ws/src/odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywhere among the existing `<depend>` lines):
 
 ```xml
 <buildtool_depend>rosidl_default_generators</buildtool_depend>
@@ -1403,8 +1405,7 @@ And in `odom_demo_msgs/package.xml`, add these inside the `<package>` tag (anywh
 **3.3 Create the Python package**
 
 ```bash
-cd ~/ros2_ws/src
-ros2 pkg create --build-type ament_python odom_demo \
+ros2 pkg create --build-type ament_python ~/ros2_ws/src/odom_demo \
   --license Apache-2.0 \
   --dependencies rclpy nav_msgs geometry_msgs odom_demo_msgs
 ```
