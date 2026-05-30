@@ -2081,6 +2081,11 @@ ros2 topic echo /cmd_vel
 ```
 Press `i` a few times in Terminal B — each press emits one `TwistStamped` block: a `header` with a timestamp + `frame_id: base_link`, then a nested `twist` with `linear.x: 0.1` (forward at the `speed` you set in Step 4) and `angular.z: 0.0`. Press **`k`** to stop and you'll see one final block with `linear.x: 0.0` and `angular.z: 0.0`. Try **`j`** → `linear.x: 0.0`, `angular.z: 0.5`. Press Ctrl+C in Terminal C when you've seen enough.
 
+<figure class="screenshot">
+  <img src="images/phase2-step5-cmd-vel-echo.png" alt="Terminal output of ros2 topic echo /cmd_vel showing two TwistStamped messages: a forward command with linear.x ≈ 0.0656 followed by a stop with all zeros, both with header.frame_id base_link" />
+  <figcaption>Live <code>/cmd_vel</code> stream — the first block is a forward command (<code>twist.linear.x ≈ 0.0656</code> m/s, here after a few <code>z</code> presses trimmed the speed down), the second is the zero-Twist <code>k</code>-stop. Note the <code>header.stamp</code> + <code>frame_id: base_link</code> added by <code>stamped:=true</code>. <code>---</code> separates messages.</figcaption>
+</figure>
+
 > 💡 If `ros2 topic echo /cmd_vel` errors with *"contains more than one type"*, you forgot `stamped:=true` on teleop — see the warning callout in Step 4. As a quick workaround you can disambiguate with the type name: `ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped`.
 
 Watch **odometry** (the robot's belief about where it is):
