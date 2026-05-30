@@ -2086,8 +2086,6 @@ Press `i` a few times in Terminal B — each press emits one `TwistStamped` bloc
   <figcaption>Live <code>/cmd_vel</code> stream — the first block is a forward command (<code>twist.linear.x ≈ 0.0656</code> m/s, here after a few <code>z</code> presses trimmed the speed down), the second is the zero-Twist <code>k</code>-stop. Note the <code>header.stamp</code> + <code>frame_id: base_link</code> added by <code>stamped:=true</code>. <code>---</code> separates messages.</figcaption>
 </figure>
 
-> 💡 If `ros2 topic echo /cmd_vel` errors with *"contains more than one type"*, you forgot `stamped:=true` on teleop — see the warning callout in Step 4. As a quick workaround you can disambiguate with the type name: `ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped`.
-
 Watch **odometry** (the robot's belief about where it is):
 ```bash
 ros2 topic echo /odom --once
