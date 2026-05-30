@@ -2148,23 +2148,39 @@ pose:
 - `+x` = forward of the spawn pose, `+y` = left, `+z` = up.
 - So this Burger is ≈ **80 cm from where it started** (`√(0.73² + 0.33²) ≈ 0.80 m`), and it has drifted left of the original forward axis.
 
-**Reading the orientation (the quaternion):**
-- ROS encodes 3D rotations as a unit quaternion `(x, y, z, w)` instead of Euler angles to avoid gimbal lock and make math (slerp, composition) clean. A unit quaternion always satisfies `x² + y² + z² + w² = 1` — verify: `0² + 0² + 0.6711² + 0.7413² ≈ 0.4504 + 0.5496 = 1.000`. ✅
-- For a ground robot only the **yaw** (rotation about `z`) ever changes, so `x` and `y` stay at 0 and the quaternion collapses to `(0, 0, sin(yaw/2), cos(yaw/2))`.
-- Recover the yaw angle with:
-  ```
-  yaw = 2 · atan2(orientation.z, orientation.w)
-      = 2 · atan2(0.6711, 0.7413)
-      ≈ 2 · 0.7355 rad
-      ≈ 1.471 rad
-      ≈ 84.3°
-  ```
-  So Burger is facing **~84° counter-clockwise** from where it was spawned — almost a quarter-turn to the left.
-- In Python you don't usually do this by hand — use:
-  ```python
-  from tf_transformations import euler_from_quaternion
-  roll, pitch, yaw = euler_from_quaternion([x, y, z, w])
-  ```
+**Reading the orientation (the four numbers `x, y, z, w`):**
+
+These four numbers together describe **which direction the robot is facing**. ROS stores rotations this way (it's called a *quaternion*) instead of plain angles because it avoids a few nasty edge cases when robots tumble in 3D — but for a robot rolling on a flat floor, the only thing you really care about is **yaw**: how far it has turned left or right from where it spawned.
+
+You don't have to understand quaternions to use them. Here's the only practical fact you need:
+
+> For a ground robot, **`x` and `y` stay at 0**, and the heading hides inside `z` and `w`. Convert them to a normal angle with one line of Python:
+> ```python
+> from tf_transformations import euler_from_quaternion
+> _, _, yaw = euler_from_quaternion([x, y, z, w])   # yaw in radians
+> ```
+> Or compute it directly: `yaw = 2 · atan2(z, w)`. For our values:
+> ```
+> yaw = 2 · atan2(0.6711, 0.7413) ≈ 1.47 rad ≈ 84°
+> ```
+> So Burger has turned **about 84° to the left** since it spawned — almost a quarter-turn.
+
+**Quick eyeball check** (no math needed):
+
+| If the robot is facing… | `z` is roughly… | `w` is roughly… |
+| --- | ---: | ---: |
+| Straight ahead (yaw = 0°) | `0` | `1` |
+| 90° left (¼ turn CCW) | `0.71` | `0.71` |
+| 180° around | `1` | `0` |
+| 90° right (¼ turn CW) | `-0.71` | `0.71` |
+
+So `z ≈ 0.67, w ≈ 0.74` lands just shy of the "90° left" row → matches our 84° calc.
+
+> 📚 **Want to actually understand quaternions?** They're worth a coffee-break someday, but **not required to finish this plan** — you can build a working robot treating `euler_from_quaternion(...)` as a black box. When you're curious:
+> - 🎥 [3Blue1Brown — *Visualizing quaternions* (interactive intro)](https://eater.net/quaternions) — the gentlest visual explainer on the internet.
+> - 🎥 [3Blue1Brown — *Quaternions and 3d rotation, explained interactively*](https://www.youtube.com/watch?v=zjMuIxRvygQ) — 30-min deep dive once the interactive intro clicks.
+> - 📖 [ROS 2 docs — Quaternion fundamentals](https://docs.ros.org/en/jazzy/Tutorials/Intermediate/Tf2/Quaternion-Fundamentals.html) — the practical ROS-flavoured cheat sheet (creating, converting, multiplying).
+> - 📖 [REP-103 — Standard Units of Measure and Coordinate Conventions](https://www.ros.org/reps/rep-0103.html) — the spec that says "ROS uses metres, radians, +x forward, +z up, right-handed quaternions". Memorise this and you'll read any ROS message without surprises.
 
 > 🧭 **Mental model:** `position` answers *"where am I, in metres, relative to where I started?"* and `orientation` answers *"which way am I pointing?"*. Together they fully describe Burger's 2D pose on the floor. Re-run the echo after driving more — `x`/`y` will keep changing as you translate, and `z`/`w` will change as you rotate (`z = sin(yaw/2)`, `w = cos(yaw/2)`).
 
