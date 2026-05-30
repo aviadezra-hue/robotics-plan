@@ -1969,10 +1969,6 @@ echo $TURTLEBOT3_MODEL
 
 ### 🛠️ Step 3 — Launch Gazebo + spawn the robot (empty world)
 
-<div id="resume-here" class="resume-marker">
-  <div class="resume-label"><strong>You are here</strong>Resume from Phase 2 Step 3 — TurtleBot 3 stack installed and <code>TURTLEBOT3_MODEL=burger</code> set. Next up: launch Gazebo and see the robot spawn. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
-</div>
-
 **Terminal A** — your first sim launch:
 
 ```bash
@@ -2001,18 +1997,32 @@ ros2 launch turtlebot3_gazebo empty_world.launch.py
 Leave Gazebo running. **Terminal B** — start the teleop:
 
 ```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args -p stamped:=true -p frame_id:=base_link
 ```
 
 **Expected:** a key-binding cheat sheet prints (`i` = forward, `,` = back, `j`/`l` = rotate, `k` = stop, `q`/`z` = speed up/down). The terminal stays waiting for keystrokes.
 
 > 🪟 **Important:** the teleop only reads keys when its terminal **has focus**. Click it, then press `i` — you should see Burger creep forward in Gazebo. `k` stops it. `,` reverses. `j`/`l` spin in place.
 
-**Why it matters:** `teleop_twist_keyboard` is a **generic** node — it knows nothing about TurtleBot. It just publishes `geometry_msgs/Twist` messages on `/cmd_vel`. Gazebo's diff-drive plugin (loaded from the Burger URDF) subscribes to that topic and turns Twist into wheel velocities, which Gazebo physics simulates as motion. **This pub/sub decoupling is why the same teleop works with TurtleBot 3, TurtleBot 4, your custom robot, or real hardware — anything that subscribes to `/cmd_vel` with the right message type drives.**
+> ⚠️ **Why `stamped:=true`?** On ROS 2 Jazzy + Gazebo Harmonic, `ros_gz_bridge` subscribes to `/cmd_vel` as **`geometry_msgs/msg/TwistStamped`** (the newer, header-bearing variant). The default `teleop_twist_keyboard` publishes plain `Twist`, so without `stamped:=true` you get two different message types on the same topic — teleop messages never reach Gazebo and the robot doesn't move. You'll also see this error if you try to echo it:
+>
+> ```
+> Cannot echo topic '/cmd_vel', as it contains more than one type:
+> [geometry_msgs/msg/Twist, geometry_msgs/msg/TwistStamped]
+> ```
+>
+> The `stamped` parameter is **read-only** — you must set it on the launch command line; changing it later with `ros2 param set` will be rejected. Confirm with `ros2 topic info /cmd_vel --verbose` — you should see a single type (`TwistStamped`) and one publisher / one subscriber.
+
+**Why it matters:** `teleop_twist_keyboard` is a **generic** node — it knows nothing about TurtleBot. It just publishes velocity-command messages on `/cmd_vel`. Gazebo's diff-drive plugin (loaded from the Burger URDF, via `ros_gz_bridge`) subscribes to that topic and turns each command into wheel velocities, which Gazebo physics simulates as motion. **This pub/sub decoupling is why the same teleop works with TurtleBot 3, TurtleBot 4, your custom robot, or real hardware — anything that subscribes to `/cmd_vel` with the right message type drives.** The "right message type" used to be just `Twist`; on modern Jazzy/Harmonic stacks it's `TwistStamped`, which adds a `header` (timestamp + `frame_id`) so consumers can reason about *when* and *in what frame* the command was issued.
 
 ---
 
 ### 🛠️ Step 5 — Inspect the robot's topics live
+
+<div id="resume-here" class="resume-marker">
+  <div class="resume-label"><strong>You are here</strong>Resume from Phase 2 Step 5 — Gazebo + stamped teleop are running and you can drive the Burger from the keyboard. Next up: poke at the live topics (<code>/cmd_vel</code>, <code>/odom</code>, <code>/scan</code>) to see the robot's nervous system. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
+</div>
 
 Leave Gazebo + teleop running. **Terminal C** — explore:
 
@@ -2027,7 +2037,9 @@ Watch the **velocity command** stream as you teleop:
 ```bash
 ros2 topic echo /cmd_vel
 ```
-Press `i` a few times in Terminal B — each press emits one `Twist` block (`linear.x: 0.05` for forward, `angular.z: 0.5` for spin). Press Ctrl+C in Terminal C when you've seen enough.
+Press `i` a few times in Terminal B — each press emits one `TwistStamped` block (a `header` with timestamp + `frame_id: base_link`, plus a nested `twist` with `linear.x: 0.05` for forward, `angular.z: 0.5` for spin). Press Ctrl+C in Terminal C when you've seen enough.
+
+> 💡 If `ros2 topic echo /cmd_vel` errors with *"contains more than one type"*, you forgot `stamped:=true` on teleop — see the warning callout in Step 4. As a quick workaround you can disambiguate with the type name: `ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped`.
 
 Watch **odometry** (the robot's belief about where it is):
 ```bash
@@ -2235,8 +2247,9 @@ A full one-shot run that proves the whole stack works:
 # Terminal A — sim
 ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py
 
-# Terminal B — teleop
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
+# Terminal B — teleop (stamped, to match ros_gz_bridge)
+ros2 run teleop_twist_keyboard teleop_twist_keyboard \
+  --ros-args -p stamped:=true -p frame_id:=base_link
 
 # Terminal C — RViz2 (Fixed Frame=odom, add RobotModel + TF + LaserScan)
 ros2 run rviz2 rviz2
