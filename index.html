@@ -1994,16 +1994,19 @@ ros2 launch turtlebot3_gazebo empty_world.launch.py
 
 ### 🛠️ Step 4 — Drive it with keyboard teleop
 
-Leave Gazebo running. **Terminal B** — start the teleop:
+Leave Gazebo running. **Terminal B** — start the teleop **at slow, safe speeds** so you can see what every keystroke does:
 
 ```bash
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
-  --ros-args -p stamped:=true -p frame_id:=base_link
+  --ros-args -p stamped:=true -p frame_id:=base_link \
+             -p speed:=0.1 -p turn:=0.5
 ```
 
-**Expected:** a key-binding cheat sheet prints (`i` = forward, `,` = back, `j`/`l` = rotate, `k` = stop, `q`/`z` = speed up/down). The terminal stays waiting for keystrokes.
+**Expected:** a key-binding cheat sheet prints and the terminal stays waiting for keystrokes.
 
-> 🪟 **Important:** the teleop only reads keys when its terminal **has focus**. Click it, then press `i` — you should see Burger creep forward in Gazebo. `k` stops it. `,` reverses. `j`/`l` spin in place.
+> 🐢 **Why slow it down?** The default `speed=0.5` m/s is **more than 2× the TurtleBot 3 Burger's spec max of 0.22 m/s** — at default speed the robot rockets off-screen before you can read `/cmd_vel`. Starting at `speed=0.1` m/s and `turn=0.5` rad/s gives you ~10 cm per second of forward motion and a gentle ~28°/s rotation — slow enough to *watch* each command land in `/odom`. Bump it up later with the `q` key once you're comfortable.
+
+> 🪟 **Important:** the teleop only reads keys when its terminal **has focus**. Click it, then press `i` — Burger should creep forward in Gazebo. `k` stops it.
 
 > ⚠️ **Why `stamped:=true`?** On ROS 2 Jazzy + Gazebo Harmonic, `ros_gz_bridge` subscribes to `/cmd_vel` as **`geometry_msgs/msg/TwistStamped`** (the newer, header-bearing variant). The default `teleop_twist_keyboard` publishes plain `Twist`, so without `stamped:=true` you get two different message types on the same topic — teleop messages never reach Gazebo and the robot doesn't move. You'll also see this error if you try to echo it:
 >
@@ -2014,6 +2017,45 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 >
 > The `stamped` parameter is **read-only** — you must set it on the launch command line; changing it later with `ros2 param set` will be rejected. Confirm with `ros2 topic info /cmd_vel --verbose` — you should see a single type (`TwistStamped`) and one publisher / one subscriber.
 
+#### 🧭 Understand each keystroke before moving on
+
+Don't blast through this — press each key **once**, watch Gazebo, then look at the `/cmd_vel` echo (next step) to see exactly what the node sent. With `speed=0.1` / `turn=0.5`, the values in your `Twist` will be:
+
+| Key | `linear.x` (m/s) | `angular.z` (rad/s) | What it does |
+| --- | ---: | ---: | --- |
+| `i` | **+0.10** | 0.00 | drive forward in a straight line |
+| `,` (comma) | **−0.10** | 0.00 | drive straight backward |
+| `j` | 0.00 | **+0.50** | rotate left in place (CCW from above) |
+| `l` (lowercase L) | 0.00 | **−0.50** | rotate right in place (CW) |
+| `u` | +0.10 | +0.50 | forward-left arc |
+| `o` | +0.10 | −0.50 | forward-right arc |
+| `m` | −0.10 | −0.50 | backward-left arc *(robot is reversed, so left from its POV)* |
+| `.` (period) | −0.10 | +0.50 | backward-right arc |
+| `k` *(or any other key)* | 0.00 | 0.00 | **stop** (publishes a zero Twist) |
+
+**Speed-tuning keys (no motion, just changes the multipliers for next press):**
+
+| Key | Effect on `speed` | Effect on `turn` |
+| --- | --- | --- |
+| `q` | × 1.1 (faster overall) | × 1.1 |
+| `z` | × 0.9 (slower overall) | × 0.9 |
+| `w` | × 1.1 | — |
+| `x` | × 0.9 | — |
+| `e` | — | × 1.1 |
+| `c` | — | × 0.9 |
+
+The cheat sheet teleop prints when it starts confirms these. The new values aren't *applied* until you press a motion key — `q` alone just updates the multiplier and prints the new speed/turn line.
+
+#### 🧪 A guided 60-second drill
+
+1. Click teleop terminal. Press **`i` once** → Burger inches forward. Press **`k`** → it stops.
+2. Press **`j`** a few times → Burger rotates left in place. **`l`** → rotates right. **`k`** → stop.
+3. Press **`z` four times** → speeds drop to about 6.5 cm/s and 0.33 rad/s. Press **`i`** → notice how much slower it is.
+4. Press **`q` six times** → speeds climb back up. Press **`i`** again to feel the difference.
+5. End on **`k`** so the robot is stationary before you move to Step 5.
+
+> 💡 **Mental model:** every keystroke publishes **one** `Twist` message. Gazebo's diff-drive plugin keeps applying that velocity until it receives a new one — so a single `i` press makes Burger keep going at 0.10 m/s indefinitely until you press `k` (or any non-mapped key) to send a zero Twist. This is normal for ROS velocity control; navigation stacks like Nav2 send a continuous stream of Twists at 10–20 Hz instead of one-shot presses.
+
 **Why it matters:** `teleop_twist_keyboard` is a **generic** node — it knows nothing about TurtleBot. It just publishes velocity-command messages on `/cmd_vel`. Gazebo's diff-drive plugin (loaded from the Burger URDF, via `ros_gz_bridge`) subscribes to that topic and turns each command into wheel velocities, which Gazebo physics simulates as motion. **This pub/sub decoupling is why the same teleop works with TurtleBot 3, TurtleBot 4, your custom robot, or real hardware — anything that subscribes to `/cmd_vel` with the right message type drives.** The "right message type" used to be just `Twist`; on modern Jazzy/Harmonic stacks it's `TwistStamped`, which adds a `header` (timestamp + `frame_id`) so consumers can reason about *when* and *in what frame* the command was issued.
 
 ---
@@ -2021,7 +2063,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard \
 ### 🛠️ Step 5 — Inspect the robot's topics live
 
 <div id="resume-here" class="resume-marker">
-  <div class="resume-label"><strong>You are here</strong>Resume from Phase 2 Step 5 — Gazebo + stamped teleop are running and you can drive the Burger from the keyboard. Next up: poke at the live topics (<code>/cmd_vel</code>, <code>/odom</code>, <code>/scan</code>) to see the robot's nervous system. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
+  <div class="resume-label"><strong>You are here</strong>Resume from Phase 2 Step 5 — Gazebo + stamped teleop are running, you've driven Burger with each key and understand what `linear.x` / `angular.z` each one produces. Next up: poke at the live topics (<code>/cmd_vel</code>, <code>/odom</code>, <code>/scan</code>) to see the robot's nervous system. Tap the floating <em>📍 Resume here</em> button anywhere on the page to jump back.</div>
 </div>
 
 Leave Gazebo + teleop running. **Terminal C** — explore:
@@ -2037,7 +2079,7 @@ Watch the **velocity command** stream as you teleop:
 ```bash
 ros2 topic echo /cmd_vel
 ```
-Press `i` a few times in Terminal B — each press emits one `TwistStamped` block (a `header` with timestamp + `frame_id: base_link`, plus a nested `twist` with `linear.x: 0.05` for forward, `angular.z: 0.5` for spin). Press Ctrl+C in Terminal C when you've seen enough.
+Press `i` a few times in Terminal B — each press emits one `TwistStamped` block: a `header` with a timestamp + `frame_id: base_link`, then a nested `twist` with `linear.x: 0.1` (forward at the `speed` you set in Step 4) and `angular.z: 0.0`. Press **`k`** to stop and you'll see one final block with `linear.x: 0.0` and `angular.z: 0.0`. Try **`j`** → `linear.x: 0.0`, `angular.z: 0.5`. Press Ctrl+C in Terminal C when you've seen enough.
 
 > 💡 If `ros2 topic echo /cmd_vel` errors with *"contains more than one type"*, you forgot `stamped:=true` on teleop — see the warning callout in Step 4. As a quick workaround you can disambiguate with the type name: `ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped`.
 
@@ -2247,9 +2289,10 @@ A full one-shot run that proves the whole stack works:
 # Terminal A — sim
 ros2 launch turtlebot3_gazebo turtlebot3_house.launch.py
 
-# Terminal B — teleop (stamped, to match ros_gz_bridge)
+# Terminal B — teleop (stamped, slow + safe defaults)
 ros2 run teleop_twist_keyboard teleop_twist_keyboard \
-  --ros-args -p stamped:=true -p frame_id:=base_link
+  --ros-args -p stamped:=true -p frame_id:=base_link \
+             -p speed:=0.1 -p turn:=0.5
 
 # Terminal C — RViz2 (Fixed Frame=odom, add RobotModel + TF + LaserScan)
 ros2 run rviz2 rviz2
