@@ -1983,7 +1983,7 @@ ros2 launch turtlebot3_gazebo empty_world.launch.py
 
 <figure class="screenshot wide">
   <img src="images/phase2-step3-gazebo-empty-world.png" alt="Gazebo Sim with the TurtleBot 3 Burger spawned in the empty world">
-  <figcaption>Gazebo Sim — empty world with <code>ground_plane</code>, <code>sun</code>, and <code>burger</code> in the Entity Tree (zoom out to see the robot clearly)</figcaption>
+  <figcaption>Gazebo Sim — empty world with <code>ground_plane</code>, <code>sun</code>, and <code>burger</code> in the Entity Tree. 🔍 <strong>Zoom in</strong> (browser zoom or click the image) for a clearer view of the Burger model and the inspector panel.</figcaption>
 </figure>
 
 **Why it matters:**this single launch started ~5 nodes: Gazebo's server (`gzserver`) + GUI (`gzclient`), the URDF-driven `robot_state_publisher` (which publishes the TF tree from joint states), the `joint_state_publisher`, and a Gazebo-ROS bridge that exposes the robot's sensors as ROS topics. *Everything you do next in Phase 2 talks to this launched system over those topics.* Leave it running.
