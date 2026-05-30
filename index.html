@@ -2125,7 +2125,50 @@ Watch **odometry** (the robot's belief about where it is):
 ```bash
 ros2 topic echo /odom --once
 ```
-You get pose (position + orientation as quaternion), twist (current linear + angular velocity), and covariance matrices. Drive forward a bit, run it again — `pose.pose.position.x/y` will have changed.
+You get a `nav_msgs/Odometry` message with two main blocks — **`pose`** (where the robot is in the world) and **`twist`** (how fast it's moving right now) — each with a 6×6 covariance matrix.
+
+Here's a real `pose` block after driving the Burger a bit forward and turning left, with each field explained:
+
+```yaml
+pose:
+  pose:
+    position:                        # METRES, in the /odom frame (origin = spawn point)
+      x: 0.7279310002930971          # ~0.73 m forward of where Burger started
+      y: 0.3303565135726635          # ~0.33 m to the left of the start line
+      z: 0.0                         # 0 — Burger is a ground robot
+    orientation:                     # heading as a QUATERNION (x, y, z, w)
+      x: 0.0                         # roll  axis component  — 0 for a flat ground robot
+      y: 0.0                         # pitch axis component  — 0 for a flat ground robot
+      z: 0.6711437716917592          # yaw   axis component  (rotation around vertical)
+      w: 0.7413272136643574          # scalar / "real" part of the quaternion
+```
+
+**Reading the position (`x`, `y`, `z`):**
+- It's a straight-line offset from the robot's **spawn point** (the `/odom` frame origin), in metres.
+- `+x` = forward of the spawn pose, `+y` = left, `+z` = up.
+- So this Burger is ≈ **80 cm from where it started** (`√(0.73² + 0.33²) ≈ 0.80 m`), and it has drifted left of the original forward axis.
+
+**Reading the orientation (the quaternion):**
+- ROS encodes 3D rotations as a unit quaternion `(x, y, z, w)` instead of Euler angles to avoid gimbal lock and make math (slerp, composition) clean. A unit quaternion always satisfies `x² + y² + z² + w² = 1` — verify: `0² + 0² + 0.6711² + 0.7413² ≈ 0.4504 + 0.5496 = 1.000`. ✅
+- For a ground robot only the **yaw** (rotation about `z`) ever changes, so `x` and `y` stay at 0 and the quaternion collapses to `(0, 0, sin(yaw/2), cos(yaw/2))`.
+- Recover the yaw angle with:
+  ```
+  yaw = 2 · atan2(orientation.z, orientation.w)
+      = 2 · atan2(0.6711, 0.7413)
+      ≈ 2 · 0.7355 rad
+      ≈ 1.471 rad
+      ≈ 84.3°
+  ```
+  So Burger is facing **~84° counter-clockwise** from where it was spawned — almost a quarter-turn to the left.
+- In Python you don't usually do this by hand — use:
+  ```python
+  from tf_transformations import euler_from_quaternion
+  roll, pitch, yaw = euler_from_quaternion([x, y, z, w])
+  ```
+
+> 🧭 **Mental model:** `position` answers *"where am I, in metres, relative to where I started?"* and `orientation` answers *"which way am I pointing?"*. Together they fully describe Burger's 2D pose on the floor. Re-run the echo after driving more — `x`/`y` will keep changing as you translate, and `z`/`w` will change as you rotate (`z = sin(yaw/2)`, `w = cos(yaw/2)`).
+
+The rest of the `/odom` message you can skim for now: `twist.twist` mirrors `/cmd_vel` (current linear + angular velocity the robot believes it has) and the two 6×6 `covariance` matrices express how confident the odometry estimate is (a real robot's wheel slip makes these grow over time).
 
 Watch the **lidar** (where the robot thinks the walls are):
 ```bash
