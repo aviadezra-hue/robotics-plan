@@ -2079,11 +2079,46 @@ Watch the **velocity command** stream as you teleop:
 ```bash
 ros2 topic echo /cmd_vel
 ```
-Press `i` a few times in Terminal B — each press emits one `TwistStamped` block: a `header` with a timestamp + `frame_id: base_link`, then a nested `twist` with `linear.x: 0.1` (forward at the `speed` you set in Step 4) and `angular.z: 0.0`. Press **`k`** to stop and you'll see one final block with `linear.x: 0.0` and `angular.z: 0.0`. Try **`j`** → `linear.x: 0.0`, `angular.z: 0.5`. Press Ctrl+C in Terminal C when you've seen enough.
+
+Each `i` / `j` / `k` keypress prints **one** YAML block separated by `---`. Here's what each field means, line by line:
+
+```yaml
+header:                       # added because you launched with stamped:=true
+  stamp:
+    sec: 1780168843            # Unix-style timestamp: seconds since epoch
+    nanosec: 934531922         # ...plus nanoseconds (combine for sub-ms precision)
+  frame_id: base_link          # "this velocity is expressed in the robot's body frame"
+twist:                         # the actual command (a geometry_msgs/Twist underneath)
+  linear:                      # translational velocity, in METERS PER SECOND
+    x: 0.1                     # +x is forward (along the robot's nose)
+    y: 0.0                     # +y is left  — always 0 for a diff-drive bot (it can't strafe)
+    z: 0.0                     # +z is up    — always 0 on the ground
+  angular:                     # rotational velocity, in RADIANS PER SECOND
+    x: 0.0                     # roll  — always 0 for a ground robot
+    y: 0.0                     # pitch — always 0 for a ground robot
+    z: 0.5                     # yaw   — +z is CCW (left) when viewed from above
+---
+```
+
+**How the numbers map to your keypresses (with `speed=0.1`, `turn=0.5` from Step 4):**
+
+| Key you pressed | `twist.linear.x` | `twist.angular.z` | Meaning |
+| --- | ---: | ---: | --- |
+| `i` | `0.1` | `0.0` | forward at 0.10 m/s |
+| `,` | `-0.1` | `0.0` | reverse at 0.10 m/s |
+| `j` | `0.0` | `0.5` | spin left at 0.50 rad/s (~28°/s) |
+| `l` | `0.0` | `-0.5` | spin right |
+| `u` / `o` | `0.1` | `±0.5` | forward arc |
+| `m` / `.` | `-0.1` | `±0.5` | reverse arc |
+| `k` *(or any non-mapped key)* | `0.0` | `0.0` | **stop** |
+
+> 🔢 If your numbers are different (e.g. `0.0656` instead of `0.1`), you pressed `q`/`z`/`w`/`x`/`e`/`c` and changed the multipliers — that's `speed × 0.9^n` after `n` presses of `z`. Press `q` a few times to bring them back up, or restart teleop to reset to `0.1` / `0.5`. **Only `linear.x` and `angular.z` will ever be non-zero on a diff-drive bot — the other four are structural placeholders.**
+
+Press Ctrl+C in Terminal C when you've seen enough.
 
 <figure class="screenshot">
   <img src="images/phase2-step5-cmd-vel-echo.png" alt="Terminal output of ros2 topic echo /cmd_vel showing two TwistStamped messages: a forward command with linear.x ≈ 0.0656 followed by a stop with all zeros, both with header.frame_id base_link" />
-  <figcaption>Live <code>/cmd_vel</code> stream — the first block is a forward command (<code>twist.linear.x ≈ 0.0656</code> m/s, here after a few <code>z</code> presses trimmed the speed down), the second is the zero-Twist <code>k</code>-stop. Note the <code>header.stamp</code> + <code>frame_id: base_link</code> added by <code>stamped:=true</code>. <code>---</code> separates messages.</figcaption>
+  <figcaption>Live <code>/cmd_vel</code> stream — top block: a forward command at <code>twist.linear.x ≈ 0.0656</code> m/s (speed was trimmed with a few <code>z</code> presses), <code>angular.z = 0</code> so it's a perfectly straight line. Bottom block: zero-Twist after pressing <code>k</code>, so the robot stops. <code>header.stamp</code> + <code>frame_id: base_link</code> are present because of <code>stamped:=true</code>; <code>---</code> is the YAML message separator <code>ros2 topic echo</code> prints between messages.</figcaption>
 </figure>
 
 Watch **odometry** (the robot's belief about where it is):
